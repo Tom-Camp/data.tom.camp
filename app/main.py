@@ -56,7 +56,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 
-app.include_router(device_routes.router, prefix="/api")
+app.include_router(device_routes, prefix="/api")
 
 
 @app.get("/", include_in_schema=False)
