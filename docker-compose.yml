@@ -1,5 +1,5 @@
 services:
-  tcdata_api:
+  api:
     build: .
     ports:
       - "5000:5000"
@@ -10,9 +10,10 @@ services:
     networks:
       - app-network
     depends_on:
-      - tcdata_db
+      data:
+        condition: service_healthy
 
-  tcdata_db:
+  data:
     image: postgres:15
     environment:
       POSTGRES_DB: ${POSTGRES_DB}
@@ -26,6 +27,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   postgres_data:

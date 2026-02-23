@@ -2,6 +2,7 @@ from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    ADMIN_SECRET_KEY: str = Field(description="Admin secret key")
     APP_NAME: str = Field(default="Tom.Camp.Api")
     CORS_ORIGINS: list[str] | None = None
     ENVIRONMENT: str | None = None
