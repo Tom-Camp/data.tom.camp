@@ -1,6 +1,7 @@
 from pydantic import AliasChoices, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
     ADMIN_SECRET_KEY: str = Field(description="Admin secret key")
     APP_NAME: str = Field(default="Tom.Camp.Api")
@@ -10,12 +11,11 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = Field(default="INFO")
     LOG_NAME: str = Field(default="tcdata")
     LOG_JSON_FORMAT: bool = False
-    LOG_ACCESS_NAME: str | None = None
     POSTGRES_DB: str | None = None
     POSTGRES_HOST: str | None = None
     POSTGRES_PASS: SecretStr = Field(
         default="postgres",
-        validation_alias=AliasChoices("POSTGRES_PASS", "postgres_password")
+        validation_alias=AliasChoices("POSTGRES_PASS", "postgres_password"),
     )
     POSTGRES_PORT: str | None = None
     POSTGRES_USER: str | None = None

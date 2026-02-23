@@ -1,6 +1,5 @@
-from secrets import token_urlsafe
-from typing import Any
 import uuid
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import JSONB
@@ -8,10 +7,13 @@ from sqlmodel import Field, Relationship
 
 from app.models.base import ModelBase
 
+if TYPE_CHECKING:
+    from app.models.api_key import ApiKey  # noqa: F401
+
 JSONType = JSON().with_variant(JSONB(), "postgresql")
 
 
-class DeviceData(ModelBase, table=True):
+class DeviceData(ModelBase, table=True):  # type: ignore
     data: dict[str, Any] = Field(
         default_factory=dict,
         sa_type=JSONType,
@@ -21,14 +23,14 @@ class DeviceData(ModelBase, table=True):
     device: "Device" = Relationship(back_populates="data")
 
 
-class Device(ModelBase, table=True):
+class Device(ModelBase, table=True):  # type: ignore
 
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=1024)
-    api_key: str = Field(default_factory=lambda: token_urlsafe(32))
     notes: dict[str, Any] = Field(
         default_factory=dict,
         sa_type=JSONType,
         nullable=False,
     )
+    api_key: ApiKey = Relationship(back_populates="device")
     data: list["DeviceData"] = Relationship(back_populates="device")
