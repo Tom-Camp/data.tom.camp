@@ -1,11 +1,11 @@
 # 💾 Tom.Camp Data
 
-A [FastAPI](https://fastapi.tiangolo.com/) application to collect data from microcontrollers and store it in 
-a database. It provides an API for devices to send data and an admin endpoints to manage devices and view 
+A [FastAPI](https://fastapi.tiangolo.com/) application to collect data from microcontrollers and store it in
+a database. It provides an API for devices to send data and an admin endpoints to manage devices and view
 collected data.
 
-🔑 API keys are required for both devices and admin access. Devices can post data to the `/api/v1/data` 
-endpoint, while admins can manage devices and view data through the `/api/v1/devices` and `api/v1/keys` 
+🔑 API keys are required for both devices and admin access. Devices can post data to the `/api/v1/data`
+endpoint, while admins can manage devices and view data through the `/api/v1/devices` and `api/v1/keys`
 endpoints.
 
 The data that is collected is stored as a JSON blob in the database, allowing for flexible data structures.
@@ -26,7 +26,7 @@ uv sync install
 ```
 
 Copy the `.env.example` file to `.env`; and update the environment variables:
-   
+
 ```env
 ADMIN_SECRET_KEY=your_secret_here
 APP_NAME="Your.App.Name"
@@ -34,9 +34,9 @@ APP_NAME="Your.App.Name"
 ```
 
 Start the application:
-   
+
 Using uv:
-   
+
 The application requires a running PostgreSQL database.
 
 ```bash
@@ -46,7 +46,7 @@ uv run main:app --reload
 Using Docker Compose:
 
 `docker-compose.yml` is configured to use the environment variables from the `.env` file and will spin
- up both the application and a PostgreSQL database. Make sure to update the `.env` file with the 
+ up both the application and a PostgreSQL database. Make sure to update the `.env` file with the
  correct values.
 ```bash
 docker-compose up -d
@@ -56,4 +56,3 @@ docker-compose up -d
 
 To create a device, you can use the admin API endpoint. First, generate a Device using the `/api/v1/devices`
 endpoint. This will return a unique Device object, which can be used to authenticate when sending data.
-

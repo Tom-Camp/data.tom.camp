@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.api_key_schema import ApiKeyOut, ApiKeyCreate
+from app.schemas.api_key_schema import ApiKeyCreate, ApiKeyOut
 from app.services.api_key_service import ApiKeyService
 from app.utils.auth import generate_api_key, hash_api_key, require_admin
 from app.utils.database import get_session

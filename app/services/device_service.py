@@ -69,7 +69,6 @@ class DeviceService:
 
         return db_device
 
-
     async def delete(self, device_id: str):
         """
         Delete a device by its ID.
@@ -85,7 +84,6 @@ class DeviceService:
         await self._db.delete(db_device)
         await self._db.commit()
         logger.info("Deleted device {} with id: {}", db_device.name, db_device.id)
-
 
     async def list(self, skip: int = 0, limit: int = 50) -> Sequence[Device | None]:
         """

@@ -64,6 +64,7 @@ async def device_read(
         **db_device.model_dump(exclude={"api_key", "created_date", "data"})
     )
 
+
 @device_routes.put(
     "/{device_id}",
     dependencies=[Depends(require_admin)],
