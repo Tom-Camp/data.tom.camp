@@ -1,14 +1,14 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from sqlmodel import SQLModel
 
 
-class ApiKeyOut(BaseModel):
+class ApiKeyOut(SQLModel):
     id: str
     api_key: str
 
 
-class ApiKeyInfo(BaseModel):
+class ApiKeyInfo(SQLModel):
     id: str
     device_id: str
     created_date: datetime

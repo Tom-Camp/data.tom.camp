@@ -24,8 +24,7 @@ class DeviceData(ModelBase, table=True):  # type: ignore
 
 
 class Device(ModelBase, table=True):  # type: ignore
-
-    name: str = Field(..., max_length=255)
+    name: str = Field(..., max_length=255, unique=True)
     description: str | None = Field(default=None, max_length=1024)
     notes: dict[str, Any] = Field(
         default_factory=dict,
@@ -33,4 +32,4 @@ class Device(ModelBase, table=True):  # type: ignore
         nullable=False,
     )
     api_key: ApiKey = Relationship(back_populates="device")
-    data: list["DeviceData"] = Relationship(back_populates="device")
+    data: list[DeviceData] = Relationship(back_populates="device")

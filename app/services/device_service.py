@@ -1,3 +1,5 @@
+from typing import Sequence
+
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
@@ -11,23 +13,38 @@ class DeviceService:
     def __init__(self, session: AsyncSession):
         self._db = session
 
-    async def create(self, device: DeviceCreate) -> Device:
+    async def create(self, device_create: DeviceCreate) -> Device:
         """
         Create a new device in database.
 
-        :param device: DeviceCreate object; devices.device_schemas.DeviceCreate
+        :param device_create: DeviceCreate object; devices.device_schemas.DeviceCreate
         :return: Device object; devices.device_models.Device
         """
 
-        db_device = Device(**device.model_dump())
+        db_device = Device(**device_create.model_dump())
 
         self._db.add(db_device)
-        await self._db.flush()
+        await self._db.commit()
+        await self._db.refresh(db_device)
         logger.info("Created device {} with id: {}", db_device.name, db_device.id)
 
         return db_device
 
-    async def get_device_by_id(self, device_id: int) -> Device | None:
+    async def list(self, skip: int = 0, limit: int = 50) -> Sequence[Device | None]:
+        """
+        List devices with pagination.
+        :param skip: Number of records to skip for pagination.
+        :param limit: Maximum number of records to return for pagination.
+        :return:
+        """
+
+        statement = select(Device).offset(skip).limit(limit)
+        result = await self._db.execute(statement)
+        devices = result.scalars().all()
+        logger.info(f"Found {len(devices)} devices")
+        return devices
+
+    async def get(self, device_id: str) -> Device | None:
         """
         Get a device by its ID.
 
@@ -36,29 +53,7 @@ class DeviceService:
         """
 
         db_device: Device | None = await self._db.get(Device, device_id)
-
         if db_device is None:
             logger.warning("Device with id {} not found", device_id)
             return None
-
-        logger.info("Retrieved device {} with id: {}", db_device.name, db_device.id)
-        return db_device
-
-    async def get_device_by_key(self, api_key: str) -> Device | None:
-        """
-        Get a device by its API key.
-
-        :param api_key: The API key of the device to retrieve.
-        :return: Device object; devices.device_models.Device
-        """
-
-        statement = select(Device).where(Device.api_key == api_key)
-        result = await self._db.execute(statement)
-        db_device = result.scalars().first()
-
-        if db_device is None:
-            logger.warning("Device with id {} not found", api_key)
-            return None
-
-        logger.info("Retrieved device {} with id: {}", db_device.name, db_device.id)
         return db_device

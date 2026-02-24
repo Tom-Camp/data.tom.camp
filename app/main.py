@@ -6,16 +6,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from loguru import logger
 
-from app.api.v1.device_router import device_routes
+from app.api.v1.api_key_routes import api_key_routes
+from app.api.v1.device_routes import device_routes
 from app.utils.config import settings
-from app.utils.database import create_db_and_tables
+from app.utils.database import create_db_and_tables, dispose_engine
 from app.utils.logger import setup_logging
 from app.utils.middleware import RequestLoggingMiddleware
 
 setup_logging(
     level=settings.LOG_LEVEL,
     json=settings.LOG_JSON_FORMAT,
-    log_file=settings.LOG_NAME,  # e.g. "/var/log/app/api.log"
+    log_file=settings.LOG_NAME,
 )
 
 
@@ -26,6 +27,8 @@ async def lifespan(app: FastAPI):
     logger.info("Startup complete")
     yield
     logger.info("Shutting down")
+    await dispose_engine()
+    logger.info("Shutdown complete — engine disposed")
 
 
 app = FastAPI(
@@ -56,6 +59,7 @@ async def log_requests(request: Request, call_next):
     return response
 
 
+app.include_router(api_key_routes, prefix="/api")
 app.include_router(device_routes, prefix="/api")
 
 

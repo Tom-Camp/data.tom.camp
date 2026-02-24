@@ -2,7 +2,6 @@ import uuid
 from datetime import datetime
 
 import sqlalchemy as sa
-
 from pydantic import ConfigDict
 from sqlalchemy.sql import func
 from sqlmodel import Field, SQLModel
@@ -24,6 +23,7 @@ class ModelBase(SQLModel):
         sa_type=sa.DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
+        alias="created date",
     )
 
     updated_date: datetime | None = Field(
@@ -31,4 +31,5 @@ class ModelBase(SQLModel):
         sa_type=sa.DateTime(timezone=True),
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
+        alias="last updated",
     )
