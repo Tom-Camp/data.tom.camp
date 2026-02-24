@@ -1,10 +1,17 @@
+import uuid
+
 from datetime import datetime
 
 from sqlmodel import SQLModel
 
 
+class ApiKeyCreate(SQLModel):
+    device_id: str
+    key_hash: str
+
+
 class ApiKeyOut(SQLModel):
-    id: str
+    id: uuid.UUID
     api_key: str
 
 

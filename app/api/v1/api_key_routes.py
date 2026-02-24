@@ -2,8 +2,7 @@ from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.api_key import ApiKey
-from app.schemas.api_key_schema import ApiKeyOut
+from app.schemas.api_key_schema import ApiKeyOut, ApiKeyCreate
 from app.services.api_key_service import ApiKeyService
 from app.utils.auth import generate_api_key, hash_api_key, require_admin
 from app.utils.database import get_session
@@ -22,7 +21,7 @@ def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyS
     status_code=status.HTTP_201_CREATED,
 )
 async def create_api_key(
-    device_id: int,
+    device_id: str,
     service: ApiKeyService = Depends(get_api_key_service),
 ) -> ApiKeyOut:
     """
@@ -35,14 +34,12 @@ async def create_api_key(
     logger.info("Creating API key for device ID: {}", device_id)
 
     raw_key = generate_api_key()
-    key_id = raw_key[:10]
     key_hash = hash_api_key(raw_key)
 
     api_key = await service.create(
-        api_key=ApiKey(
-            key_id=key_id,
-            key_hash=key_hash,
+        device_key=ApiKeyCreate(
             device_id=device_id,
+            key_hash=key_hash,
         )
     )
 

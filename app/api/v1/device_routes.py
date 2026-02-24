@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.device_schema import DeviceCreate, DeviceRead
+from app.schemas.device_schema import DeviceCreate, DeviceRead, DeviceUpdate
 from app.services.device_service import DeviceService
 from app.utils.auth import require_admin
 from app.utils.database import get_session
@@ -20,7 +20,7 @@ def get_device_service(session: AsyncSession = Depends(get_session)) -> DeviceSe
     response_model=DeviceRead,
     status_code=status.HTTP_201_CREATED,
 )
-async def create_device(
+async def device_create(
     device_in: DeviceCreate,
     service: DeviceService = Depends(get_device_service),
 ) -> DeviceRead:
@@ -39,8 +39,84 @@ async def create_device(
     )
 
 
+@device_routes.get(
+    "/{device_id}", response_model=DeviceRead, status_code=status.HTTP_200_OK
+)
+async def device_read(
+    device_id: str,
+    service: DeviceService = Depends(get_device_service),
+) -> DeviceRead:
+    """
+    Route to get a device by its ID.
+
+    :param device_id: The ID of the device to retrieve.
+    :param service: DeviceService; services.device_service.DeviceService
+    :return: Device; device_models.Device
+    """
+    logger.info("Getting device with id: {}", device_id)
+    db_device = await service.read(device_id=device_id)
+
+    if db_device is None:
+        logger.warning("Device with id {} not found", device_id)
+        raise HTTPException(status_code=404, detail="Not found")
+
+    return DeviceRead(
+        **db_device.model_dump(exclude={"api_key", "created_date", "data"})
+    )
+
+@device_routes.put(
+    "/{device_id}",
+    dependencies=[Depends(require_admin)],
+    response_model=DeviceRead,
+    status_code=status.HTTP_200_OK,
+)
+async def device_update(
+    device_id: str,
+    device_in: DeviceUpdate,
+    service: DeviceService = Depends(get_device_service),
+) -> DeviceRead:
+    """
+    Route to update a device by its ID.
+
+    :param device_id: The ID of the device to update.
+    :param device_in: DeviceUpdate object; schemas.device_schema.DeviceUpdate
+    :param service: DeviceService; services.device_service.DeviceService
+    :return: Device; device_models.Device
+    """
+    logger.info("Updating device with id: {}", device_id)
+    db_device = await service.update(device_id=device_id, device_update=device_in)
+
+    if db_device is None:
+        logger.warning("Device with id {} not found", device_id)
+        raise HTTPException(status_code=404, detail="Not found")
+
+    return DeviceRead(
+        **db_device.model_dump(exclude={"api_key", "created_date", "data"})
+    )
+
+
+@device_routes.delete(
+    "/{device_id}",
+    dependencies=[Depends(require_admin)],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def device_delete(
+    device_id: str,
+    service: DeviceService = Depends(get_device_service),
+) -> None:
+    """
+    Route to delete a device by its ID.
+
+    :param device_id: The ID of the device to delete.
+    :param service: DeviceService; services.device_service.DeviceService
+    """
+    logger.info("Deleting device with id: {}", device_id)
+    await service.delete(device_id=device_id)
+    return None
+
+
 @device_routes.get("/", response_model=list[DeviceRead], status_code=status.HTTP_200_OK)
-async def list_devices(
+async def devices_list(
     limit: int = 10,
     offset: int = 0,
     service: DeviceService = Depends(get_device_service),
@@ -61,29 +137,3 @@ async def list_devices(
         for device in db_devices
         if device is not None
     ]
-
-
-@device_routes.get(
-    "/{device_id}", response_model=DeviceRead, status_code=status.HTTP_200_OK
-)
-async def get_device(
-    device_id: str,
-    service: DeviceService = Depends(get_device_service),
-) -> DeviceRead:
-    """
-    Route to get a device by its ID.
-
-    :param device_id: The ID of the device to retrieve.
-    :param service: DeviceService; services.device_service.DeviceService
-    :return: Device; device_models.Device
-    """
-    logger.info("Getting device with id: {}", device_id)
-    db_device = await service.get(device_id=device_id)
-
-    if db_device is None:
-        logger.warning("Device with id {} not found", device_id)
-        raise HTTPException(status_code=404, detail="Not found")
-
-    return DeviceRead(
-        **db_device.model_dump(exclude={"api_key", "created_date", "data"})
-    )

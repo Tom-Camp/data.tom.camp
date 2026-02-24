@@ -11,7 +11,6 @@ if TYPE_CHECKING:
 
 
 class ApiKey(ModelBase, table=True):  # type: ignore
-    key_id: str = Field(nullable=False, unique=True)
     key_hash: str = Field(nullable=False, unique=True)
     revoked: bool = Field(default=False)
     last_used_at: datetime | None = Field(default=None)
