@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from loguru import logger
 
 from app.api.v1.api_key_routes import api_key_routes
+from app.api.v1.data_routes import data_routes
 from app.api.v1.device_routes import device_routes
 from app.utils.config import settings
 from app.utils.database import create_db_and_tables, dispose_engine
@@ -60,6 +61,7 @@ async def log_requests(request: Request, call_next):
 
 
 app.include_router(api_key_routes, prefix="/api")
+app.include_router(data_routes, prefix="/api")
 app.include_router(device_routes, prefix="/api")
 
 

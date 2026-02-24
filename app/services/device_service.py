@@ -1,3 +1,4 @@
+import uuid
 from typing import Sequence
 
 from fastapi import HTTPException
@@ -13,6 +14,12 @@ class DeviceService:
 
     def __init__(self, session: AsyncSession):
         self._db = session
+
+    @staticmethod
+    def _normalize_device_id(device_id: str | uuid.UUID) -> uuid.UUID:
+        if isinstance(device_id, uuid.UUID):
+            return device_id
+        return uuid.UUID(device_id)
 
     async def create(self, device_create: DeviceCreate) -> Device:
         """
@@ -31,7 +38,7 @@ class DeviceService:
 
         return db_device
 
-    async def read(self, device_id: str) -> Device | None:
+    async def read(self, device_id: str | uuid.UUID) -> Device | None:
         """
         Get a device by its ID.
 
@@ -39,13 +46,20 @@ class DeviceService:
         :return: Device object; devices.device_models.Device
         """
 
-        db_device: Device | None = await self._db.get(Device, device_id)
+        db_device: Device | None = await self._db.get(
+            Device,
+            self._normalize_device_id(device_id),
+        )
         if db_device is None:
             logger.warning("Device with id {} not found", device_id)
             return None
         return db_device
 
-    async def update(self, device_id: str, device_update: DeviceUpdate) -> Device:
+    async def update(
+        self,
+        device_id: str | uuid.UUID,
+        device_update: DeviceUpdate,
+    ) -> Device:
         """
         Update a device by its ID.
 
@@ -54,7 +68,10 @@ class DeviceService:
         :return: Updated Device object; devices.device_models.Device
         """
 
-        db_device: Device | None = await self._db.get(Device, device_id)
+        db_device: Device | None = await self._db.get(
+            Device,
+            self._normalize_device_id(device_id),
+        )
         if db_device is None:
             logger.warning("Device with id {} not found", device_id)
             raise HTTPException(status_code=404, detail="Not found")
@@ -69,14 +86,17 @@ class DeviceService:
 
         return db_device
 
-    async def delete(self, device_id: str):
+    async def delete(self, device_id: str | uuid.UUID) -> None:
         """
         Delete a device by its ID.
 
         :param device_id: The ID of the device to delete.
         """
 
-        db_device: Device | None = await self._db.get(Device, device_id)
+        db_device: Device | None = await self._db.get(
+            Device,
+            self._normalize_device_id(device_id),
+        )
         if db_device is None:
             logger.warning("Device with id {} not found", device_id)
             raise HTTPException(status_code=404, detail="Not found")
@@ -97,5 +117,4 @@ class DeviceService:
         statement = select(Device).offset(skip).limit(limit)
         result = await self._db.execute(statement)
         devices = result.scalars().all()
-        logger.info(f"Found {len(devices)} devices")
         return devices

@@ -27,3 +27,14 @@ def hash_api_key(raw: str) -> str:
     :return:
     """
     return hashlib.sha256((settings.HASH_SALT + raw).encode("utf-8")).hexdigest()
+
+
+def verify_api_key(raw: str, hashed: str) -> bool:
+    """
+    Verify a raw API key against a hashed value.
+
+    :param raw: The raw API key to verify.
+    :param hashed: The hashed API key to compare against.
+    :return: True if the raw API key matches the hashed value, False otherwise.
+    """
+    return hash_api_key(raw) == hashed

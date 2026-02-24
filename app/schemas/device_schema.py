@@ -35,3 +35,4 @@ class DeviceRead(SQLModel):
     name: str
     description: str | None = None
     notes: dict[str, Any]
+    api_key: uuid.UUID | None = None

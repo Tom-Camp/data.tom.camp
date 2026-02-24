@@ -31,3 +31,18 @@ class ApiKeyService:
         logger.info("Created API key: {}", db_api_key.id)
 
         return db_api_key
+
+    async def delete(self, key_id: str) -> None:
+        """
+        Delete an API key by its ID.
+
+        :param key_id: The ID of the API key to delete.
+        """
+        db_api_key: ApiKey | None = await self._db.get(ApiKey, key_id)
+        if not db_api_key:
+            logger.warning("API key with id {} not found", key_id)
+            raise HTTPException(status_code=404, detail="Not found")
+
+        await self._db.delete(db_api_key)
+        await self._db.commit()
+        logger.info("Deleted API key with id: {}", key_id)
