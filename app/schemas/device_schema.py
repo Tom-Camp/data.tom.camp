@@ -2,15 +2,12 @@ from typing import Any
 
 from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlmodel import Field
-
-from app.models.device import Device, DeviceData
-from app.schemas.api_key_schema import ApiKeyInfo
+from sqlmodel import Field, SQLModel
 
 JSONType = JSON().with_variant(JSONB(), "postgresql")
 
 
-class DeviceCreate(Device):
+class DeviceCreate(SQLModel):
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=1024)
     notes: dict[str, Any] = Field(
@@ -20,7 +17,7 @@ class DeviceCreate(Device):
     )
 
 
-class DeviceUpdate(Device):
+class DeviceUpdate(SQLModel):
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=1024)
     notes: dict[str, Any] = Field(
@@ -30,7 +27,7 @@ class DeviceUpdate(Device):
     )
 
 
-class DeviceRead(Device):
+class DeviceRead(SQLModel):
     name: str = Field(..., max_length=255)
     description: str | None = Field(default=None, max_length=1024)
     notes: dict[str, Any] = Field(
@@ -38,8 +35,12 @@ class DeviceRead(Device):
         sa_type=JSONType,
         nullable=False,
     )
-    api_keys: list[ApiKeyInfo] = Field()
 
 
-class DeviceDataCreate(DeviceData):
+class DeviceReadWithKey(DeviceRead):
+    api_key: str
+    key_id: str
+
+
+class DeviceDataCreate(SQLModel):
     pass

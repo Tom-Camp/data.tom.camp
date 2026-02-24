@@ -11,9 +11,9 @@ if TYPE_CHECKING:
 
 
 class ApiKey(ModelBase, table=True):  # type: ignore
-    key_hash: str
-    owner_id: int = Field(index=True)
+    key_id: str = Field(nullable=False, unique=True)
+    key_hash: str = Field(nullable=False, unique=True)
     revoked: bool = Field(default=False)
-    last_used_at: datetime | None = None
+    last_used_at: datetime | None = Field(default=None)
     device_id: uuid.UUID = Field(foreign_key="device.id", nullable=False)
-    device: "Device" = Relationship(back_populates="data")
+    device: "Device" = Relationship(back_populates="api_key")

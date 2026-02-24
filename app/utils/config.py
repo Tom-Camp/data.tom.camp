@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = Field(default="Tom.Camp.Api")
     CORS_ORIGINS: list[str] | None = None
     ENVIRONMENT: str | None = None
-    HASH_ALGORITHM: str | None = None
+    HASH_SALT: str = Field(description="Hash salt")
     LOG_LEVEL: str = Field(default="INFO")
     LOG_NAME: str = Field(default="tcdata")
     LOG_JSON_FORMAT: bool = False

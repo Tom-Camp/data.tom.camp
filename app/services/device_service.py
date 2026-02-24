@@ -22,8 +22,7 @@ class DeviceService:
         db_device = Device(**device.model_dump())
 
         self._db.add(db_device)
-        await self._db.commit()
-        await self._db.refresh(db_device)
+        await self._db.flush()
         logger.info("Created device {} with id: {}", db_device.name, db_device.id)
 
         return db_device
