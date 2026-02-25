@@ -56,3 +56,18 @@ docker-compose up -d
 
 To create a device, you can use the admin API endpoint. First, generate a Device using the `/api/v1/devices`
 endpoint. This will return a unique Device object, which can be used to authenticate when sending data.
+
+
+## Send data
+
+Devices can send data to the `/api/v1/data` endpoint using their unique Device ID and API key. The data
+should be sent as a JSON payload in the request body. The Device ID and the API key should be included in the
+request headers for authentication using the following format:
+
+```
+POST /api/v1/data HTTP/1.1
+Host: your-app-domain.com
+Content-Type: application/json
+X-Device-ID: your_device_id
+X-API-Key: your_api_key
+```

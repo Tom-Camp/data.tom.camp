@@ -1,12 +1,21 @@
 import hashlib
 import secrets
+from typing import Annotated
 
-from fastapi import Header, HTTPException
+from fastapi import Depends, Header, HTTPException, status
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.api_key import ApiKey
+from app.services.api_key_service import ApiKeyService
 from app.utils.config import settings
+from app.utils.database import get_session
 
 API_KEY_LEN = 40
+
+
+def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyService:
+    return ApiKeyService(session=session)
 
 
 def require_admin(x_admin_secret: str = Header(...)):
@@ -29,12 +38,22 @@ def hash_api_key(raw: str) -> str:
     return hashlib.sha256((settings.HASH_SALT + raw).encode("utf-8")).hexdigest()
 
 
-def verify_api_key(raw: str, hashed: str) -> bool:
-    """
-    Verify a raw API key against a hashed value.
+async def verify_api_key(
+    raw_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    device_id: Annotated[str | None, Header(alias="X-Device-Id")] = None,
+) -> ApiKey:
+    if raw_key is None or device_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Missing authentication headers",
+        )
+    service = get_api_key_service()
+    api_key = await service.get_by_device_id(device_id=device_id)
 
-    :param raw: The raw API key to verify.
-    :param hashed: The hashed API key to compare against.
-    :return: True if the raw API key matches the hashed value, False otherwise.
-    """
-    return hash_api_key(raw) == hashed
+    if not hash_api_key(raw_key) == api_key.key_hash or api_key.revoked:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
+
+    return api_key

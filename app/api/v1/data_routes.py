@@ -1,9 +1,13 @@
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.schemas.data_schema import DeviceDataCreate, DeviceDataRead
+from app.models.api_key import ApiKey
+from app.schemas.data_schema import DeviceDataRead
 from app.services.data_service import DataService
+from app.utils.auth import verify_api_key
 from app.utils.database import get_session
 
 data_routes = APIRouter(prefix="/v1/data")
@@ -15,17 +19,19 @@ def get_device_service(session: AsyncSession = Depends(get_session)) -> DataServ
 
 @data_routes.post("/", status_code=status.HTTP_201_CREATED)
 async def data_create(
-    data_in: DeviceDataCreate,
+    data_in: dict[str, Any],
+    api_key: ApiKey = Depends(verify_api_key),
     service: DataService = Depends(get_device_service),
 ) -> dict[str, str]:
     """
     Route to create a new device data entry.
-    :param data_in: DeviceDataCreate; schemas.data_schema.DeviceDataCreate
+    :param data_in: A dictionary containing the device data to create.
+    :param api_key: The API key for authentication, obtained from the verify_api_key dependency.
     :param service: DataService; services.data_service.DataService
     :return: A dictionary containing the status and ID of the created device data entry.
     """
     logger.info("Creating device data with input: {}", data_in)
-    return await service.create(data_in=data_in)
+    return await service.create(data_in=data_in, api_key=api_key)
 
 
 @data_routes.get(

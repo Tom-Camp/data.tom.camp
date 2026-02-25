@@ -33,43 +33,54 @@ class ApiKeyService:
 
         return db_api_key
 
-    async def revoke(self, device_id: str) -> dict[str, str]:
+    async def get_by_device_id(self, device_id: str) -> ApiKey:
+        """
+        Get an API key by device ID.
+
+        :param device_id: The ID of the device to retrieve the API key for.
+        :return: ApiKey object; models.api_key.ApiKey
+        """
+        api_key = await self.__get_key_by_device_id(device_id=device_id)
+        return api_key
+
+    async def revoke(self, api_key: ApiKey) -> dict[str, str]:
         """
         Revoke an API key by its ID.
-        :param device_id: The ID of the device whose API key should be revoked.
+        :param api_key: ApiKeyCreate object; schemas.api_key_schema.ApiKeyCreate
         :return: A dictionary with a message confirming the revocation.
         """
-        statement = select(ApiKey).where(ApiKey.device_id == device_id)
-        result = await self._db.execute(statement)
-        key_data = result.scalars().one_or_none()
-        if not key_data:
-            logger.warning("API key for device id {} not found", device_id)
-            raise HTTPException(status_code=404, detail="Not found")
-
-        key_data.revoked = True
-        self._db.add(key_data)
+        api_key.revoked = True
+        self._db.add(api_key)
         await self._db.commit()
-        logger.info("Revoked API key with id: {}", key_data.id)
-        return {"message": f"API key with id {key_data.id} has been revoked."}
+        logger.info("Revoked API key with id: {}", api_key.id)
+        return {"message": f"API key with id {api_key.id} has been revoked."}
 
-    async def refresh(self, key_data: ApiKeyCreate) -> ApiKey:
+    async def refresh(self, api_key: ApiKey) -> ApiKey:
         """
         Refresh an API key for a device by revoking the old key and creating a new one.
 
-        :param key_data: ApiKeyCreate object; schemas.api_key_schema.ApiKeyCreate
-        :return: The new ApiKey object.
+        :param api_key: ApiKey object; models.api_key.ApiKey
+        :return: ApiKey object; models.api_key.ApiKey
         """
-        statement = select(ApiKey).where(ApiKey.device_id == key_data.device_id)
+        self._db.add(api_key)
+        await self._db.commit()
+        await self._db.refresh(api_key)
+        logger.info("Refreshed API key for device id: {}", api_key.device_id)
+        return api_key
+
+    async def __get_key_by_device_id(self, device_id: str) -> ApiKey:
+        """
+        Get an API key by device ID.
+
+        :param device_id: The ID of the device to retrieve the API key for.
+        :return: ApiKey object; models.api_key.ApiKey
+        """
+        statement = select(ApiKey).where(ApiKey.device_id == device_id)
         result = await self._db.execute(statement)
-        key_data = result.scalars().one_or_none()
-        if not key_data:
-            logger.warning("API key for device id {} not found", key_data.device_id)
+        key = result.scalars().one_or_none()
+
+        if not key:
+            logger.warning("API key for device id {} not found", device_id)
             raise HTTPException(status_code=404, detail="Not found")
 
-        key_data.key_hash = key_data.key_hash
-        key_data.revoked = False
-        self._db.add(key_data)
-        await self._db.commit()
-        await self._db.refresh(key_data)
-        logger.info("Refreshed API key for device id: {}", key_data.device_id)
-        return key_data
+        return key

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Sequence
+from typing import Any, Sequence
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,8 +7,6 @@ from sqlmodel import select
 
 from app.models.api_key import ApiKey
 from app.models.device import Device, DeviceData
-from app.schemas.data_schema import DeviceDataCreate
-from app.utils.auth import verify_api_key
 
 
 class DataService:
@@ -16,30 +14,14 @@ class DataService:
     def __init__(self, session: AsyncSession):
         self._db = session
 
-    async def create(self, data_in: DeviceDataCreate) -> dict[str, str]:
+    async def create(self, data_in: dict[str, Any], api_key: ApiKey) -> dict[str, str]:
         """
         Create a new device data entry in the database.
-        :param data_in: DeviceDataCreate; schemas.data_schema.DeviceDataCreate
+        :param data_in: A dictionary containing the device data to create.
+        :param api_key: The API key for authentication, obtained from the verify_api_key dependency
         :return: A dictionary containing the status and ID of the created device data entry.
         """
-        device = await self._db.get(Device, data_in.device_id)
-        if not device:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unknown device",
-            )
-
-        statement = select(ApiKey).where(ApiKey.device_id == data_in.device_id)
-        result = await self._db.execute(statement)
-        api_key = result.scalar_one_or_none()
-
-        if api_key.revoked or not verify_api_key(data_in.api_key, api_key.key_hash):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid API key",
-            )
-
-        device_data = DeviceData(**data_in.model_dump(exclude={"api_key"}))
+        device_data = DeviceData(data=data_in, device_id=api_key.device_id)
         self._db.add(device_data)
 
         api_key.last_used_at = datetime.now()
