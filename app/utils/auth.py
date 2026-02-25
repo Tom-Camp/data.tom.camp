@@ -41,14 +41,14 @@ def hash_api_key(raw: str) -> str:
 async def verify_api_key(
     raw_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
     device_id: Annotated[str | None, Header(alias="X-Device-Id")] = None,
+    api_service: ApiKeyService = Depends(get_api_key_service),
 ) -> ApiKey:
     if raw_key is None or device_id is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authentication headers",
         )
-    service = get_api_key_service()
-    api_key = await service.get_by_device_id(device_id=device_id)
+    api_key = await api_service.get_api_key(device_id=device_id)
 
     if not hash_api_key(raw_key) == api_key.key_hash or api_key.revoked:
         raise HTTPException(

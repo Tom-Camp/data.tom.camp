@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException
 from loguru import logger
 from sqlalchemy import select
@@ -33,7 +35,7 @@ class ApiKeyService:
 
         return db_api_key
 
-    async def get_by_device_id(self, device_id: str) -> ApiKey:
+    async def get_api_key(self, device_id: str) -> ApiKey:
         """
         Get an API key by device ID.
 
@@ -55,18 +57,21 @@ class ApiKeyService:
         logger.info("Revoked API key with id: {}", api_key.id)
         return {"message": f"API key with id {api_key.id} has been revoked."}
 
-    async def refresh(self, api_key: ApiKey) -> ApiKey:
+    async def refresh(self, key_hash: str, device_id: str) -> UUID:
         """
         Refresh an API key for a device by revoking the old key and creating a new one.
-
-        :param api_key: ApiKey object; models.api_key.ApiKey
+        :param key_hash: API key hash
+        :param device_id: The ID of the device to retrieve the API key for.
         :return: ApiKey object; models.api_key.ApiKey
         """
+        api_key = await self.__get_key_by_device_id(device_id=device_id)
+        api_key.key_hash = key_hash
         self._db.add(api_key)
         await self._db.commit()
         await self._db.refresh(api_key)
+
         logger.info("Refreshed API key for device id: {}", api_key.device_id)
-        return api_key
+        return api_key.id
 
     async def __get_key_by_device_id(self, device_id: str) -> ApiKey:
         """

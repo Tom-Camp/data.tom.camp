@@ -47,7 +47,7 @@ async def api_key_create(
 
 
 @api_key_routes.put(
-    "/{device_id}",
+    "/",
     dependencies=[Depends(require_admin)],
     status_code=status.HTTP_200_OK,
 )
@@ -72,7 +72,7 @@ async def api_key_revoke(
     status_code=status.HTTP_200_OK,
 )
 async def api_key_refresh(
-    api_key: ApiKey = Depends(verify_api_key),
+    device_id: str,
     service: ApiKeyService = Depends(get_api_key_service),
 ) -> ApiKeyOut:
     """
@@ -82,13 +82,11 @@ async def api_key_refresh(
     :param service: ApiKeyService; services.api_key_service.ApiKeyService
     :return: The new API key string.
     """
-    logger.info("Refreshing API key for device with ID: {}", api_key.device_id)
+    logger.info("Refreshing API key for device with ID: {}", device_id)
 
     # Create a new key for the same device
     raw_key = generate_api_key()
     key_hash = hash_api_key(raw_key)
-    api_key.key_hash = key_hash
+    key_id = await service.refresh(key_hash=key_hash, device_id=device_id)
 
-    key = await service.refresh(api_key=api_key)
-
-    return ApiKeyOut(id=key.id, api_key=raw_key)
+    return ApiKeyOut(id=key_id, api_key=raw_key)
