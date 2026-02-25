@@ -1,25 +1,43 @@
-from collections.abc import AsyncGenerator
-
 import pytest_asyncio
-from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
+from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
-from app.main import app
-from app.utils.database import get_session
+# ── 1. Patch the engine BEFORE importing anything from your app ──────────────
+from app.utils import database  # import the module itself, not symbols from it
 
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"  # async SQLite in-memory
 
-test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
-TestSessionFactory = async_sessionmaker(
-    test_engine,
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,  # one shared connection across threads
+    echo=False,
+)
+TestingSessionLocal = async_sessionmaker(
+    bind=test_engine,
     class_=AsyncSession,
     expire_on_commit=False,
 )
 
+database.engine = test_engine
+database.AsyncSessionFactory = TestingSessionLocal
 
-@pytest_asyncio.fixture(scope="session", autouse=True)
-async def setup_db():
+
+from app.main import app  # noqa: E402 - import after patching the engine
+from app.utils.database import (  # noqa: E402 - import after patching the engine
+    get_session as get_db,
+)
+
+
+async def override_get_db():
+    async with TestingSessionLocal() as session:
+        yield session
+
+
+@pytest_asyncio.fixture(loop_scope="session", scope="session", autouse=True)
+async def create_test_tables():
+    """Create schema once for the whole test session."""
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
     yield
@@ -27,21 +45,12 @@ async def setup_db():
         await conn.run_sync(SQLModel.metadata.drop_all)
 
 
-@pytest_asyncio.fixture()
-async def session() -> AsyncGenerator[AsyncSession, None]:
-    async with TestSessionFactory() as s:
-        yield s
-        await s.rollback()
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def client(create_test_tables):
+    """Fresh TestClient per test with DB dependency overridden."""
+    app.dependency_overrides[get_db] = override_get_db
+    from fastapi.testclient import TestClient
 
-
-@pytest_asyncio.fixture()
-async def client(session: AsyncSession) -> AsyncGenerator[AsyncClient, None]:
-    async def override_get_session():
-        yield session
-
-    app.dependency_overrides[get_session] = override_get_session
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as c:
+    with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
