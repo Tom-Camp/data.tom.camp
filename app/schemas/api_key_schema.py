@@ -5,7 +5,7 @@ from sqlmodel import SQLModel
 
 
 class ApiKeyCreate(SQLModel):
-    device_id: str
+    device_id: uuid.UUID
     key_hash: str
 
 

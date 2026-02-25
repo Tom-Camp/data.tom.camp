@@ -35,7 +35,7 @@ class ApiKeyService:
 
         return db_api_key
 
-    async def get_api_key(self, device_id: str) -> ApiKey:
+    async def get_api_key(self, device_id: UUID) -> ApiKey:
         """
         Get an API key by device ID.
 
@@ -57,7 +57,7 @@ class ApiKeyService:
         logger.info("Revoked API key with id: {}", api_key.id)
         return {"message": f"API key with id {api_key.id} has been revoked."}
 
-    async def refresh(self, key_hash: str, device_id: str) -> UUID:
+    async def refresh(self, key_hash: str, device_id: UUID) -> UUID:
         """
         Refresh an API key for a device by revoking the old key and creating a new one.
         :param key_hash: API key hash
@@ -73,7 +73,7 @@ class ApiKeyService:
         logger.info("Refreshed API key for device id: {}", api_key.device_id)
         return api_key.id
 
-    async def __get_key_by_device_id(self, device_id: str) -> ApiKey:
+    async def __get_key_by_device_id(self, device_id: UUID) -> ApiKey:
         """
         Get an API key by device ID.
 

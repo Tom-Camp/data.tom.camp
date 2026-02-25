@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +24,7 @@ def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyS
     status_code=status.HTTP_201_CREATED,
 )
 async def api_key_create(
-    device_id: str,
+    device_id: UUID,
     service: ApiKeyService = Depends(get_api_key_service),
 ) -> ApiKeyOut:
     """
@@ -72,7 +74,7 @@ async def api_key_revoke(
     status_code=status.HTTP_200_OK,
 )
 async def api_key_refresh(
-    device_id: str,
+    device_id: UUID,
     service: ApiKeyService = Depends(get_api_key_service),
 ) -> ApiKeyOut:
     """
