@@ -20,12 +20,12 @@ class DeviceCreate(SQLModel):
 
 
 class DeviceUpdate(SQLModel):
-    name: str = Field(..., max_length=255)
-    description: str | None = Field(default=None, max_length=1024)
+    name: str | None = Field(None, max_length=255)
+    description: str | None = Field(None, max_length=1024)
     notes: dict[str, Any] = Field(
         default_factory=dict,
         sa_type=JSONType,
-        nullable=False,
+        nullable=True,
     )
 
 

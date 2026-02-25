@@ -76,7 +76,7 @@ class DeviceService:
             logger.warning("Device with id {} not found", device_id)
             raise HTTPException(status_code=404, detail="Not found")
 
-        for key, value in device_update.model_dump().items():
+        for key, value in device_update.model_dump(exclude_unset=True).items():
             setattr(db_device, key, value)
 
         self._db.add(db_device)

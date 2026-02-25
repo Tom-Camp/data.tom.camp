@@ -19,3 +19,7 @@ class ApiKeyInfo(SQLModel):
     device_id: str
     created_date: datetime
     revoked: bool
+
+
+class ApiKeyUpdate(SQLModel):
+    revoked: bool

@@ -29,7 +29,7 @@ class Device(ModelBase, table=True):  # type: ignore
     notes: dict[str, Any] = Field(
         default_factory=dict,
         sa_type=JSONType,
-        nullable=False,
+        nullable=True,
     )
     api_key: ApiKey = Relationship(back_populates="device")
     data: list[DeviceData] = Relationship(back_populates="device")
