@@ -3,7 +3,6 @@ import secrets
 from typing import Annotated
 
 from fastapi import Depends, Header, HTTPException, status
-from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.api_key import ApiKey
@@ -18,9 +17,10 @@ def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyS
     return ApiKeyService(session=session)
 
 
-def require_admin(x_admin_secret: str = Header(...)):
-    logger.debug("x_admin_secret: {}", x_admin_secret)
-    if not secrets.compare_digest(x_admin_secret, settings.ADMIN_SECRET_KEY):
+def require_admin(x_admin_secret: str | None = Header(None)):
+    if not x_admin_secret or not secrets.compare_digest(
+        x_admin_secret, settings.ADMIN_SECRET_KEY
+    ):
         raise HTTPException(status_code=403)
 
 

@@ -5,6 +5,7 @@ from sqlmodel import SQLModel
 
 # ── 1. Patch the engine BEFORE importing anything from your app ──────────────
 from app.utils import database  # import the module itself, not symbols from it
+from app.utils.config import settings
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"  # async SQLite in-memory
 
@@ -54,3 +55,48 @@ async def client(create_test_tables):
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def admin_headers():
+    """Headers with a valid admin secret for authenticated endpoints."""
+    yield {"X-Admin-Secret": settings.ADMIN_SECRET_KEY}
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def db_session():
+    """Provides a database session for direct DB operations in tests."""
+    async with TestingSessionLocal() as session:
+        yield session
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def default_devices(db_session: AsyncSession):
+    """Create default devices for testing."""
+    from app.models.device import Device
+
+    devices = [
+        Device(
+            name="Test Device 1",
+            description="First test device",
+            notes={"location": "lab", "status": "active"},
+        ),
+        Device(
+            name="Test Device 2",
+            description="Second test device",
+            notes={"location": "office", "status": "inactive"},
+        ),
+        Device(name="Test Device 3", description="Third test device", notes={}),
+    ]
+
+    for device in devices:
+        db_session.add(device)
+
+    await db_session.commit()
+
+    for device in devices:
+        await db_session.refresh(device)
+
+    yield devices
+
+    # Cleanup happens automatically since tables are recreated per test

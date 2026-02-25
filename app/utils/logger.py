@@ -96,7 +96,12 @@ def setup_logging(
     logging.basicConfig(handlers=[_InterceptHandler()], level=0, force=True)
 
     # Silence noisy libraries you don't want polluting your logs
-    for noisy in ("uvicorn.access",):
+    for noisy in (
+        "uvicorn.access",
+        "sqlalchemy.engine",
+        "sqlalchemy.pool",
+        "sqlalchemy.dialects",
+    ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
