@@ -1,10 +1,11 @@
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 
 from app.api.v1.api_key_routes import api_key_routes
 from app.api.v1.data_routes import data_routes
@@ -77,4 +78,13 @@ async def custom_422_handler(request: Request, exc: RequestValidationError):
         content={
             "detail": "Invalid request data",
         },
+    )
+
+
+@app.exception_handler(IntegrityError)
+async def integrity_error_handler(request: Request, exc: IntegrityError):
+    # You can inspect `exc.orig` / `str(exc.orig)` to route to different messages
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": "Integrity error: constraint violated"},
     )
