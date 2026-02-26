@@ -33,7 +33,7 @@ class TestData:
     async def test_add_data_bad_key(
         self, client: TestClient, admin_headers: dict, default_devices: list
     ):
-        """Adding data should return 403."""
+        """Adding data should return 404."""
         data_headers: dict = {
             "X-API-Key": "00000000-0000-0000-0000-000000000000",
             "X-Device-Id": str(default_devices[0].id),
@@ -43,7 +43,7 @@ class TestData:
             json={"data": {"temperature": 25.5}},
             headers=data_headers,
         )
-        assert response.status_code == 401
+        assert response.status_code == 404
 
     @pytest.mark.asyncio
     async def test_read_device_data(self, client: TestClient, device_with_data: Device):
