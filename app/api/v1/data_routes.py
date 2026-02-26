@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
@@ -68,7 +69,7 @@ async def data_read(
     status_code=status.HTTP_200_OK,
 )
 async def data_list(
-    device_id: str,
+    device_id: UUID,
     skip: int = 0,
     limit: int = 50,
     service: DataService = Depends(get_device_service),

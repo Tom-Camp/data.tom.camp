@@ -1,5 +1,6 @@
 from datetime import datetime
 from typing import Any, Sequence
+from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -41,7 +42,7 @@ class DataService:
         return await self._db.get(DeviceData, data_id)
 
     async def list(
-        self, device_id: str, skip: int = 0, limit: int = 50
+        self, device_id: UUID, skip: int = 0, limit: int = 50
     ) -> Sequence[DeviceData | None]:
         """
         Get a list of all data entries for a given device.

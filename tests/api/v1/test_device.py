@@ -75,6 +75,22 @@ class TestDevice:
         assert data.get("notes", {}) == payload.get("notes", {})
 
     @pytest.mark.asyncio
+    async def test_update_device_non_admin(
+        self, client: TestClient, default_devices: list[Device]
+    ):
+        """Updating a device should return 403."""
+        payload = {
+            "name": "Updated Device Name",
+            "description": "Updated description",
+            "notes": {"updated": True},
+        }
+        response = client.put(
+            f"/api/v1/devices/{default_devices[2].id}",
+            json=payload,
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.asyncio
     async def test_delete_device(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
@@ -91,6 +107,16 @@ class TestDevice:
             headers=admin_headers,
         )
         assert response.status_code == 404
+
+    @pytest.mark.asyncio
+    async def test_delete_device_non_admin(
+        self, client: TestClient, default_devices: list[Device]
+    ):
+        """Deleting a device should return 204 and the device should no longer be retrievable."""
+        response = client.delete(
+            f"/api/v1/devices/{default_devices[1].id}",
+        )
+        assert response.status_code == 403
 
     @pytest.mark.asyncio
     async def test_list_devices(

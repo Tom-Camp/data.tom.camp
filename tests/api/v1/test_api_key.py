@@ -69,6 +69,39 @@ class TestApiKey:
         assert data.get("message", "") == "API key revoked successfully"
 
     @pytest.mark.asyncio
+    async def test_revoke_api_key_incorrect_key(
+        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    ):
+        """Revoking an API key should return 403"""
+        _ = client.post(
+            f"/api/v1/keys/{default_devices[0].id}",
+            headers=admin_headers,
+        )
+        admin_headers["X-API-Key"] = "00000000-0000-0000-0000-000000000000"
+        admin_headers["X-Device-Id"] = str(default_devices[0].id)
+        revoked = client.put(
+            "/api/v1/keys",
+            headers=admin_headers,
+        )
+        assert revoked.status_code == 401
+
+    @pytest.mark.asyncio
+    async def test_revoke_api_key_non_admin(
+        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    ):
+        """Revoking an API key should return 403."""
+        response = client.post(
+            f"/api/v1/keys/{default_devices[0].id}",
+            headers=admin_headers,
+        )
+        admin_headers["X-API-Key"] = response.json().get("api_key")
+        admin_headers["X-Device-Id"] = str(default_devices[0].id)
+        revoked = client.put(
+            "/api/v1/keys",
+        )
+        assert revoked.status_code == 403
+
+    @pytest.mark.asyncio
     async def test_refresh_api_key(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
@@ -86,3 +119,18 @@ class TestApiKey:
         data = new_response.json()
         assert "id" in data
         assert "api_key" in data
+
+    @pytest.mark.asyncio
+    async def test_refresh_api_key_non_admin(
+        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    ):
+        """Creating an API key should return 201 and the API key data."""
+        response = client.post(
+            f"/api/v1/keys/{default_devices[0].id}",
+            headers=admin_headers,
+        )
+        assert response.status_code == 201
+        new_response = client.put(
+            f"/api/v1/keys/refresh/{default_devices[0].id}",
+        )
+        assert new_response.status_code == 403

@@ -3,8 +3,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
 
+from app.models.device import Device, DeviceData
+
 # ── 1. Patch the engine BEFORE importing anything from your app ──────────────
-from app.utils import database  # import the module itself, not symbols from it
+from app.utils import database
 from app.utils.config import settings
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"  # async SQLite in-memory
@@ -12,7 +14,7 @@ TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"  # async SQLite in-memory
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool,  # one shared connection across threads
+    poolclass=StaticPool,
     echo=False,
 )
 TestingSessionLocal = async_sessionmaker(
@@ -73,7 +75,6 @@ async def db_session():
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def default_devices(db_session: AsyncSession):
     """Create default devices for testing."""
-    from app.models.device import Device
 
     devices = [
         Device(
@@ -99,4 +100,39 @@ async def default_devices(db_session: AsyncSession):
 
     yield devices
 
-    # Cleanup happens automatically since tables are recreated per test
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def device_with_data(
+    db_session: AsyncSession, client, admin_headers, default_devices
+):
+    device = Device(
+        name="Device with Data",
+        description="A device that has associated data entries",
+        notes={"location": "lab", "status": "active"},
+    )
+    db_session.add(device)
+    await db_session.commit()
+    await db_session.refresh(device)
+
+    data_entry = [
+        DeviceData(
+            device_id=device.id,
+            data={"temperature": 22.5, "humidity": 60},
+        ),
+        DeviceData(
+            device_id=device.id,
+            data={"temperature": 30.1, "humidity": 70},
+        ),
+        DeviceData(
+            device_id=device.id,
+            data={"temperature": 20.1, "humidity": 80},
+        ),
+    ]
+    for data in data_entry:
+        db_session.add(data)
+    await db_session.commit()
+    for data in data_entry:
+        await db_session.refresh(data)
+    await db_session.refresh(device)
+
+    yield device
