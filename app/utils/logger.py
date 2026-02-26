@@ -15,13 +15,11 @@ from loguru import logger
 
 class _InterceptHandler(logging.Handler):
     def emit(self, record: logging.LogRecord) -> None:
-        # Map stdlib level to Loguru level name
         try:
             level = logger.level(record.levelname).name
         except ValueError:
             level = record.levelno  # type: ignore[assignment]
 
-        # Walk the call stack to find the real caller (skip logging internals)
         frame, depth = sys._getframe(6), 6
         while frame.f_code.co_filename == logging.__file__:
             frame = frame.f_back  # type: ignore[assignment]
@@ -30,11 +28,6 @@ class _InterceptHandler(logging.Handler):
         logger.opt(depth=depth, exception=record.exc_info).log(
             level, record.getMessage()
         )
-
-
-# ---------------------------------------------------------------------------
-# Public setup function — call once at startup
-# ---------------------------------------------------------------------------
 
 
 def setup_logging(
@@ -50,20 +43,17 @@ def setup_logging(
     :param json:     Emit structured JSON lines instead of pretty text (set True in prod).
     :param log_file: Optional path for a rotating file sink alongside stdout.
     """
-    # Remove the default Loguru sink before adding our own
     logger.remove()
 
     if json:
-        # Structured JSON — ideal for log aggregators (Datadog, Loki, etc.)
         logger.add(
             sys.stdout,
             level=level,
-            serialize=True,  # Loguru's built-in JSON serialisation
-            backtrace=False,  # Keep traces out of structured logs
-            diagnose=False,  # Avoid leaking local variable values
+            serialize=True,
+            backtrace=False,
+            diagnose=False,
         )
     else:
-        # Human-readable coloured output for local development
         fmt = (
             "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "
             "<level>{level: <8}</level> | "
@@ -76,10 +66,9 @@ def setup_logging(
             level=level,
             colorize=True,
             backtrace=True,
-            diagnose=True,  # Print local variable values in tracebacks
+            diagnose=True,
         )
 
-    # Optional rotating file sink (always plain text for easy grepping)
     if log_file:
         logger.add(
             log_file,
@@ -88,14 +77,14 @@ def setup_logging(
             retention="14 days",
             compression="gz",
             backtrace=True,
-            diagnose=False,  # Never write local vars to disk (PII risk)
-            enqueue=True,  # Non-blocking writes via a background thread
+            diagnose=False,
+            enqueue=True,
         )
 
     # Forward all stdlib logging records into Loguru
     logging.basicConfig(handlers=[_InterceptHandler()], level=0, force=True)
 
-    # Silence noisy libraries you don't want polluting your logs
+    # Silence noisy libraries polluting your logs
     for noisy in (
         "uvicorn.access",
         "sqlalchemy.engine",
@@ -103,11 +92,6 @@ def setup_logging(
         "sqlalchemy.dialects",
     ):
         logging.getLogger(noisy).setLevel(logging.WARNING)
-
-
-# ---------------------------------------------------------------------------
-# Request-scoped context helper
-# ---------------------------------------------------------------------------
 
 
 @contextmanager
