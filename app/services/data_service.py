@@ -42,13 +42,14 @@ class DataService:
         return await self._db.get(DeviceData, data_id)
 
     async def list(
-        self, device_id: UUID, skip: int = 0, limit: int = 50
+        self, device_id: UUID, skip: int = 0, limit: int = 50, order: str = "desc"
     ) -> Sequence[DeviceData | None]:
         """
         Get a list of all data entries for a given device.
         :param device_id: The ID of the device to retrieve data for.
         :param skip: Skip this many entries before returning.
         :param limit: Return at most this many entries.
+        :param order: The order to return the entries in, either "asc" or "desc". Default is "desc".
         :return: A list of DeviceData objects; devices.device_models.DeviceData
         """
         device = await self._db.get(Device, device_id)
@@ -62,6 +63,11 @@ class DataService:
             .offset(skip)
             .limit(limit)
             .where(DeviceData.device_id == device_id)
+            .order_by(
+                DeviceData.created_date.desc()  # type: ignore[union-attr]
+                if order == "desc"
+                else DeviceData.created_date.asc()  # type: ignore[union-attr]
+            )
         )
         result = await self._db.execute(statement)
         data = result.scalars().all()
