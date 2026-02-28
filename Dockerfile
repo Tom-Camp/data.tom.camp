@@ -1,4 +1,3 @@
-# nosemgrep: dockerfile.security.missing-user.missing-user
 FROM ghcr.io/civicactions/pyction:latest
 
 COPY pyproject.toml uv.lock ./
@@ -13,4 +12,5 @@ COPY . .
 
 EXPOSE 5000
 
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
