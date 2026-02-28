@@ -1,4 +1,3 @@
-# nosemgrep: dockerfile.security.missing-user.missing-user
 FROM ghcr.io/civicactions/pyction:latest
 
 COPY pyproject.toml uv.lock ./
