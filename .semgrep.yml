@@ -1,2 +1,0 @@
-exclude-rules:
-  - dockerfile.security.missing-user.missing-user
