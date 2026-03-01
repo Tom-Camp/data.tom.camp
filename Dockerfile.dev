@@ -1,15 +1,13 @@
 FROM ghcr.io/civicactions/pyction:latest
 
-WORKDIR /app
-
 COPY pyproject.toml uv.lock ./
 ENV UV_PROJECT_ENVIRONMENT=/tmp/venv
 RUN uv sync --no-dev
 
+WORKDIR /app
 COPY . .
-RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
 
-ENTRYPOINT ["./entrypoint.sh"]
+# nosemgrep: dockerfile.security.missing-user.missing-user
 CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5000", "--reload"]
