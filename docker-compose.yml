@@ -1,40 +1,12 @@
 services:
   api:
-    build: .
+    image: t0mc4mp/data.tom.camp:latest
     ports:
       - "5000:5000"
-    volumes:
-      - .:/app
     env_file:
-      - .env
+      - ./.env
     networks:
       - app-network
-    depends_on:
-      data:
-        condition: service_healthy
-
-  data:
-    image: postgres:15
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASS}
-    ports:
-      - "5432:5432"
-    env_file:
-      - .env
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
 
 networks:
   app-network:
