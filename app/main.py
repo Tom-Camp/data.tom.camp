@@ -50,18 +50,6 @@ app.add_middleware(
 app.add_middleware(RequestLoggingMiddleware)
 
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.bind(path=request.url.path, method=request.method).info("request_start")
-    response = await call_next(request)
-    logger.bind(
-        path=request.url.path,
-        method=request.method,
-        status_code=response.status_code,
-    ).info("request_end")
-    return response
-
-
 app.include_router(api_key_routes, prefix="/api")
 app.include_router(data_routes, prefix="/api")
 app.include_router(device_routes, prefix="/api")
