@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     APP_NAME: str = Field(default="Tom.Camp.Api")
     CORS_ORIGINS: list[str] | None = None
     ENVIRONMENT: str | None = None
-    HASH_ALGORITHM: str = Field(description="Hash algorithm")
+    HASH_ALGORITHM: str = Field(default="blake2b", description="Hash algorithm")
     HASH_SALT: str = Field(description="Hash salt")
     LOG_LEVEL: str = Field(default="INFO")
     LOG_NAME: str = Field(default="tcdata")
@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @property

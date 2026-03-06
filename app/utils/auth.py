@@ -37,8 +37,10 @@ def hash_api_key(raw: str) -> str:
     :param raw: The raw API key to hash.
     :return: Hex digest of the hashed key.
     """
-    h = hashlib.new(settings.HASH_ALGORITHM, (settings.HASH_SALT + raw).encode("utf-8"))
-    return h.hexdigest()
+    hashed = hashlib.new(
+        settings.HASH_ALGORITHM, (settings.HASH_SALT + raw).encode("utf-8")
+    )
+    return hashed.hexdigest()
 
 
 async def verify_api_key(
