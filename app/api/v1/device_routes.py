@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -55,11 +55,6 @@ async def device_read(
     """
     logger.info("Getting device with id: {}", device_id)
     db_device = await service.read(device_id=device_id)
-
-    if db_device is None:
-        logger.warning("Device with id {} not found", device_id)
-        raise HTTPException(status_code=404, detail="Not found")
-
     return DeviceRead(**db_device.model_dump(exclude=_DEVICE_EXCLUDE))
 
 
@@ -84,11 +79,6 @@ async def device_update(
     """
     logger.info("Updating device with id: {}", device_id)
     db_device = await service.update(device_id=device_id, device_update=device_in)
-
-    if db_device is None:
-        logger.warning("Device with id {} not found", device_id)
-        raise HTTPException(status_code=404, detail="Not found")
-
     return DeviceRead(**db_device.model_dump(exclude=_DEVICE_EXCLUDE))
 
 

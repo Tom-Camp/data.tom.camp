@@ -2,10 +2,10 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Sequence
 from uuid import UUID
 
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from app.exceptions import NotFoundError
 from app.models.api_key import ApiKey
 from app.models.device import Device, DeviceData
 
@@ -33,13 +33,16 @@ class DataService:
 
         return {"status": "ok", "id": str(device_data.id)}
 
-    async def read(self, data_id: UUID) -> DeviceData | None:
+    async def read(self, data_id: UUID) -> DeviceData:
         """
         Get a device data entry by its ID.
         :param data_id: The ID of the device data entry to retrieve.
         :return: DeviceData; device_models.DeviceData
         """
-        return await self._db.get(DeviceData, data_id)
+        db_data: DeviceData | None = await self._db.get(DeviceData, data_id)
+        if db_data is None:
+            raise NotFoundError(f"Device data {data_id} not found")
+        return db_data
 
     async def list(
         self,
@@ -58,10 +61,8 @@ class DataService:
         """
         device = await self._db.get(Device, device_id)
         if not device:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unknown device",
-            )
+            raise NotFoundError(f"Device {device_id} not found")
+
         statement = (
             select(DeviceData)
             .offset(skip)
@@ -74,5 +75,4 @@ class DataService:
             )
         )
         result = await self._db.execute(statement)
-        data = result.scalars().all()
-        return data
+        return result.scalars().all()

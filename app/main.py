@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api.v1.api_key_routes import api_key_routes
 from app.api.v1.data_routes import data_routes
 from app.api.v1.device_routes import device_routes
+from app.exceptions import ConflictError, NotFoundError
 from app.utils.config import settings
 from app.utils.database import create_db_and_tables, dispose_engine
 from app.utils.logger import setup_logging
@@ -87,4 +88,20 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "Integrity error: constraint violated"},
+    )
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(ConflictError)
+async def conflict_handler(request: Request, exc: ConflictError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
     )

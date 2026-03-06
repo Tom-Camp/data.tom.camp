@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -82,12 +82,4 @@ async def data_read(
     """
     logger.info("Getting device data with id: {}", data_id)
     db_data = await service.read(data_id=data_id)
-
-    if db_data is None:
-        logger.warning("Device data with id {} not found", data_id)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Device data not found",
-        )
-
     return DeviceDataRead(**db_data.model_dump(exclude=_DATA_EXCLUDE))

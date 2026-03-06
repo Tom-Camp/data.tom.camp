@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi import Depends, Header, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.exceptions import NotFoundError
 from app.models.api_key import ApiKey
 from app.services.api_key_service import ApiKeyService
 from app.utils.config import settings
@@ -49,7 +50,13 @@ async def verify_api_key(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Missing authentication headers",
         )
-    api_key = await api_service.get_api_key(device_id=device_id)
+    try:
+        api_key = await api_service.get_api_key(device_id=device_id)
+    except NotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API key",
+        )
 
     if not hash_api_key(raw_key) == api_key.key_hash or api_key.revoked:
         raise HTTPException(
