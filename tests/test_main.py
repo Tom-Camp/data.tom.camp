@@ -1,16 +1,15 @@
-import pytest
+from uuid import UUID
 
 
 class TestMain:
 
-    @pytest.mark.asyncio
-    async def test_health_check(self, client):
-        """The root endpoint should return 200."""
-        response = client.get("/")
-        assert response.status_code == 200
+    def test_root_redirects(self, client):
+        """The root endpoint should redirect to /docs."""
+        response = client.get("/", follow_redirects=False)
+        assert response.status_code == 307
 
-    @pytest.mark.asyncio
-    async def test_read_item_not_found(self, client):
-        """Requesting a non-existent ID should return 404."""
-        response = client.get("/items/9999")
+    def test_device_not_found(self, client):
+        """Requesting a non-existent device ID should return 404."""
+        uid = UUID("00000000-0000-0000-0000-000000000000")
+        response = client.get(f"/api/v1/devices/{uid}")
         assert response.status_code == 404

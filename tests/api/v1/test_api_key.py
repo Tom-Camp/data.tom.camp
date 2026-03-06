@@ -1,6 +1,5 @@
 from uuid import UUID
 
-import pytest
 from fastapi.testclient import TestClient
 
 from app.models.device import Device
@@ -16,8 +15,7 @@ def is_valid_uuid(value: str, version: int = 4) -> bool:
 
 class TestApiKey:
 
-    @pytest.mark.asyncio
-    async def test_create_api_key(
+    def test_create_api_key(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
         """Creating an API key should return 201 and the API key data."""
@@ -29,108 +27,83 @@ class TestApiKey:
         data = response.json()
         assert is_valid_uuid(data.get("id", ""))
 
-    @pytest.mark.asyncio
-    async def test_create_api_key_not_admin(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    def test_create_api_key_not_admin(
+        self, client: TestClient, default_devices: list[Device]
     ):
-        """Creating an API key should return 403 if the user is not an admin."""
+        """Creating an API key without admin credentials should return 403."""
         response = client.post(
             f"/api/v1/keys/{default_devices[0].id}",
         )
         assert response.status_code == 403
 
-    @pytest.mark.asyncio
-    async def test_create_api_key_invalid_device(
+    def test_create_api_key_invalid_device(
         self, client: TestClient, admin_headers: dict
     ):
-        """Creating an API key should return 404 if the device does not exist."""
+        """Creating an API key for a non-existent device should return 404."""
         response = client.post(
             "/api/v1/keys/00000000-0000-0000-0000-000000000000",
             headers=admin_headers,
         )
         assert response.status_code == 404
 
-    @pytest.mark.asyncio
-    async def test_revoke_api_key(
+    def test_revoke_api_key(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
-        """Revoking an API key should return 200 and the revoked status."""
-        response = client.post(
+        """Revoking an API key should return 200 and a confirmation message."""
+        client.post(
             f"/api/v1/keys/{default_devices[0].id}",
             headers=admin_headers,
         )
-        admin_headers["X-API-Key"] = response.json().get("api_key")
-        admin_headers["X-Device-Id"] = str(default_devices[0].id)
-        revoked = client.put(
-            "/api/v1/keys",
+        response = client.patch(
+            f"/api/v1/keys/{default_devices[0].id}/revoke",
             headers=admin_headers,
         )
-        data = revoked.json()
-        assert data.get("message", "") == "API key revoked successfully"
+        assert response.status_code == 200
+        assert response.json().get("message") == "API key revoked successfully"
 
-    @pytest.mark.asyncio
-    async def test_revoke_api_key_incorrect_key(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
-    ):
-        """Revoking an API key should return 403"""
-        _ = client.post(
-            f"/api/v1/keys/{default_devices[0].id}",
+    def test_revoke_api_key_not_found(self, client: TestClient, admin_headers: dict):
+        """Revoking an API key for a non-existent device should return 404."""
+        response = client.patch(
+            "/api/v1/keys/00000000-0000-0000-0000-000000000000/revoke",
             headers=admin_headers,
         )
-        admin_headers["X-API-Key"] = "00000000-0000-0000-0000-000000000000"
-        admin_headers["X-Device-Id"] = str(default_devices[0].id)
-        revoked = client.put(
-            "/api/v1/keys",
-            headers=admin_headers,
-        )
-        assert revoked.status_code == 401
+        assert response.status_code == 404
 
-    @pytest.mark.asyncio
-    async def test_revoke_api_key_non_admin(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    def test_revoke_api_key_non_admin(
+        self, client: TestClient, default_devices: list[Device]
     ):
-        """Revoking an API key should return 403."""
-        response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}",
-            headers=admin_headers,
+        """Revoking an API key without admin credentials should return 403."""
+        response = client.patch(
+            f"/api/v1/keys/{default_devices[0].id}/revoke",
         )
-        admin_headers["X-API-Key"] = response.json().get("api_key")
-        admin_headers["X-Device-Id"] = str(default_devices[0].id)
-        revoked = client.put(
-            "/api/v1/keys",
-        )
-        assert revoked.status_code == 403
+        assert response.status_code == 403
 
-    @pytest.mark.asyncio
-    async def test_refresh_api_key(
+    def test_refresh_api_key(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
-        """Creating an API key should return 201 and the API key data."""
-        response = client.post(
+        """Refreshing an API key should return 200 and new key data."""
+        client.post(
             f"/api/v1/keys/{default_devices[0].id}",
             headers=admin_headers,
         )
-        assert response.status_code == 201
-        new_response = client.put(
+        response = client.put(
             f"/api/v1/keys/refresh/{default_devices[0].id}",
             headers=admin_headers,
         )
-        assert new_response.status_code == 200
-        data = new_response.json()
+        assert response.status_code == 200
+        data = response.json()
         assert "id" in data
         assert "api_key" in data
 
-    @pytest.mark.asyncio
-    async def test_refresh_api_key_non_admin(
+    def test_refresh_api_key_non_admin(
         self, client: TestClient, admin_headers: dict, default_devices: list[Device]
     ):
-        """Creating an API key should return 201 and the API key data."""
-        response = client.post(
+        """Refreshing an API key without admin credentials should return 403."""
+        client.post(
             f"/api/v1/keys/{default_devices[0].id}",
             headers=admin_headers,
         )
-        assert response.status_code == 201
-        new_response = client.put(
+        response = client.put(
             f"/api/v1/keys/refresh/{default_devices[0].id}",
         )
-        assert new_response.status_code == 403
+        assert response.status_code == 403

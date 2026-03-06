@@ -1,25 +1,13 @@
 import uuid
-from datetime import datetime
 
-from sqlmodel import SQLModel
+from pydantic import BaseModel
 
 
-class ApiKeyCreate(SQLModel):
+class ApiKeyCreate(BaseModel):
     device_id: uuid.UUID
     key_hash: str
 
 
-class ApiKeyOut(SQLModel):
+class ApiKeyOut(BaseModel):
     id: uuid.UUID
     api_key: str
-
-
-class ApiKeyInfo(SQLModel):
-    id: str
-    device_id: str
-    created_date: datetime
-    revoked: bool
-
-
-class ApiKeyUpdate(SQLModel):
-    revoked: bool

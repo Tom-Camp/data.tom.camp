@@ -1,4 +1,6 @@
+import pytest
 import pytest_asyncio
+from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.pool import StaticPool
 from sqlmodel import SQLModel
@@ -38,31 +40,28 @@ async def override_get_db():
         yield session
 
 
-@pytest_asyncio.fixture(loop_scope="session", scope="session", autouse=True)
+@pytest_asyncio.fixture(loop_scope="function", scope="function", autouse=True)
 async def create_test_tables():
-    """Create schema once for the whole test session."""
-    async with test_engine.begin() as conn:
-        await conn.run_sync(SQLModel.metadata.create_all)
-    yield
+    """Drop and recreate all tables before each test for clean isolation."""
     async with test_engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.drop_all)
+        await conn.run_sync(SQLModel.metadata.create_all)
+    yield
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def client(create_test_tables):
     """Fresh TestClient per test with DB dependency overridden."""
     app.dependency_overrides[get_db] = override_get_db
-    from fastapi.testclient import TestClient
-
     with TestClient(app) as c:
         yield c
     app.dependency_overrides.clear()
 
 
-@pytest_asyncio.fixture(loop_scope="function", scope="function")
-async def admin_headers():
+@pytest.fixture(scope="function")
+def admin_headers():
     """Headers with a valid admin secret for authenticated endpoints."""
-    yield {"X-Admin-Secret": settings.ADMIN_SECRET_KEY}
+    return {"X-Admin-Secret": settings.ADMIN_SECRET_KEY}
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
@@ -102,9 +101,7 @@ async def default_devices(db_session: AsyncSession):
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
-async def device_with_data(
-    db_session: AsyncSession, client, admin_headers, default_devices
-):
+async def device_with_data(db_session: AsyncSession):
     device = Device(
         name="Device with Data",
         description="A device that has associated data entries",

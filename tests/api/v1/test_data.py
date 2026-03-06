@@ -1,4 +1,3 @@
-import pytest
 from fastapi.testclient import TestClient
 
 from app.models.device import Device
@@ -6,8 +5,7 @@ from app.models.device import Device
 
 class TestData:
 
-    @pytest.mark.asyncio
-    async def test_add_data(
+    def test_add_data(
         self, client: TestClient, admin_headers: dict, default_devices: list
     ):
         """Adding data should return 201 and the data."""
@@ -29,11 +27,8 @@ class TestData:
         assert data.get("status", "") == "ok"
         assert "id" in data
 
-    @pytest.mark.asyncio
-    async def test_add_data_bad_key(
-        self, client: TestClient, admin_headers: dict, default_devices: list
-    ):
-        """Adding data should return 404."""
+    def test_add_data_bad_key(self, client: TestClient, default_devices: list):
+        """Adding data with an invalid API key should return 401."""
         data_headers: dict = {
             "X-API-Key": "00000000-0000-0000-0000-000000000000",
             "X-Device-Id": str(default_devices[0].id),
@@ -43,10 +38,9 @@ class TestData:
             json={"data": {"temperature": 25.5}},
             headers=data_headers,
         )
-        assert response.status_code == 404
+        assert response.status_code == 401
 
-    @pytest.mark.asyncio
-    async def test_read_device_data(self, client: TestClient, device_with_data: Device):
+    def test_read_device_data(self, client: TestClient, device_with_data: Device):
         response = client.get(
             f"/api/v1/data/device/{device_with_data.id}",
         )

@@ -2,10 +2,10 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlmodel import SQLModel
+from pydantic import BaseModel
 
 
-class DeviceDataRead(SQLModel):
+class DeviceDataRead(BaseModel):
     id: uuid.UUID
     created_date: datetime
     data: dict[str, Any]

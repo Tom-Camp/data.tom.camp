@@ -1,6 +1,7 @@
 import uuid
 from typing import TYPE_CHECKING, Any
 
+import sqlalchemy as sa
 from sqlalchemy import JSON
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Relationship
@@ -13,23 +14,21 @@ if TYPE_CHECKING:
 JSONType = JSON().with_variant(JSONB(), "postgresql")
 
 
-class DeviceData(ModelBase, table=True):  # type: ignore
-    data: dict[str, Any] = Field(
-        default_factory=dict,
-        sa_type=JSONType,
-        nullable=False,
-    )
-    device_id: uuid.UUID = Field(foreign_key="device.id", nullable=False)
-    device: "Device" = Relationship(back_populates="data")
-
-
 class Device(ModelBase, table=True):  # type: ignore
     name: str = Field(..., max_length=255, unique=True)
     description: str | None = Field(default=None, max_length=1024)
     notes: dict[str, Any] = Field(
         default_factory=dict,
-        sa_type=JSONType,
-        nullable=True,
+        sa_column=sa.Column(JSONType, nullable=False),
     )
-    api_key: ApiKey = Relationship(back_populates="device")
-    data: list[DeviceData] = Relationship(back_populates="device")
+    api_key: "ApiKey" = Relationship(back_populates="device")
+    data: list["DeviceData"] = Relationship(back_populates="device")
+
+
+class DeviceData(ModelBase, table=True):  # type: ignore
+    data: dict[str, Any] = Field(
+        default_factory=dict,
+        sa_column=sa.Column(JSONType, nullable=False),
+    )
+    device_id: uuid.UUID = Field(foreign_key="device.id", nullable=False)
+    device: "Device" = Relationship(back_populates="data")

@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,8 +13,10 @@ from app.utils.database import get_session
 
 data_routes = APIRouter(prefix="/v1/data")
 
+_DATA_EXCLUDE = {"updated_date", "device"}
 
-def get_device_service(session: AsyncSession = Depends(get_session)) -> DataService:
+
+def get_data_service(session: AsyncSession = Depends(get_session)) -> DataService:
     return DataService(session=session)
 
 
@@ -22,7 +24,7 @@ def get_device_service(session: AsyncSession = Depends(get_session)) -> DataServ
 async def data_create(
     data_in: dict[str, Any],
     api_key: ApiKey = Depends(verify_api_key),
-    service: DataService = Depends(get_device_service),
+    service: DataService = Depends(get_data_service),
 ) -> dict[str, str]:
     """
     Route to create a new device data entry.
@@ -31,48 +33,19 @@ async def data_create(
     :param service: DataService; services.data_service.DataService
     :return: A dictionary containing the status and ID of the created device data entry.
     """
-    logger.info("Creating device data with input: {}", data_in)
+    logger.info("Creating device data for device id: {}", api_key.device_id)
     return await service.create(data_in=data_in, api_key=api_key)
-
-
-@data_routes.get(
-    "/{data_id}",
-    response_model=DeviceDataRead,
-    status_code=status.HTTP_200_OK,
-)
-async def data_read(
-    data_id: str,
-    service: DataService = Depends(get_device_service),
-) -> DeviceDataRead:
-    """
-    Route to get a device data entry by its ID.
-    :param data_id: The ID of the device data entry to retrieve.
-    :param service: DataService; services.data_service.DataService
-    :return: DeviceData; device_models.DeviceData
-    """
-    logger.info("Getting device data with id: {}", data_id)
-    db_data = await service.read(data_id=data_id)
-
-    if db_data is None:
-        logger.warning("Device data with id {} not found", data_id)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Device data not found",
-        )
-
-    return DeviceDataRead(**db_data.model_dump(exclude={"updated_date", "device"}))
 
 
 @data_routes.get(
     "/device/{device_id}",
     response_model=list[DeviceDataRead],
-    status_code=status.HTTP_200_OK,
 )
 async def data_list(
     device_id: UUID,
     skip: int = 0,
     limit: int = 50,
-    service: DataService = Depends(get_device_service),
+    service: DataService = Depends(get_data_service),
 ) -> list[DeviceDataRead]:
     """
     Route to list device data entries for a specific device.
@@ -91,7 +64,22 @@ async def data_list(
     db_data_list = await service.list(device_id=device_id, skip=skip, limit=limit)
 
     return [
-        DeviceDataRead(**db_data.model_dump(exclude={"updated_date", "device"}))
+        DeviceDataRead(**db_data.model_dump(exclude=_DATA_EXCLUDE))
         for db_data in db_data_list
-        if db_data is not None
     ]
+
+
+@data_routes.get("/{data_id}", response_model=DeviceDataRead)
+async def data_read(
+    data_id: UUID,
+    service: DataService = Depends(get_data_service),
+) -> DeviceDataRead:
+    """
+    Route to get a device data entry by its ID.
+    :param data_id: The ID of the device data entry to retrieve.
+    :param service: DataService; services.data_service.DataService
+    :return: DeviceData; device_models.DeviceData
+    """
+    logger.info("Getting device data with id: {}", data_id)
+    db_data = await service.read(data_id=data_id)
+    return DeviceDataRead(**db_data.model_dump(exclude=_DATA_EXCLUDE))
