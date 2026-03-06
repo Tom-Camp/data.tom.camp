@@ -21,12 +21,9 @@ def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyS
 
 def require_admin(x_admin_secret: str | None = Header(None)):
     if not x_admin_secret or not secrets.compare_digest(
-        x_admin_secret, settings.ADMIN_SECRET_KEY.get_secret_value()
+        x_admin_secret, settings.ADMIN_SECRET_KEY
     ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid or missing admin secret",
-        )
+        raise HTTPException(status_code=403, detail="Invalid or missing admin secret")
 
 
 def generate_api_key() -> str:
@@ -41,8 +38,7 @@ def hash_api_key(raw: str) -> str:
     :return: Hex digest of the hashed key.
     """
     hashed = hashlib.new(
-        settings.HASH_ALGORITHM,
-        (settings.HASH_SALT.get_secret_value() + raw).encode("utf-8"),
+        settings.HASH_ALGORITHM, (settings.HASH_SALT + raw).encode("utf-8")
     )
     return hashed.hexdigest()
 
@@ -65,10 +61,7 @@ async def verify_api_key(
             detail="Invalid API key",
         )
 
-    if (
-        not secrets.compare_digest(hash_api_key(raw_key), api_key.key_hash)
-        or api_key.revoked
-    ):
+    if hash_api_key(raw_key) != api_key.key_hash or api_key.revoked:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API key",

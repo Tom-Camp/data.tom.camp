@@ -2,17 +2,18 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from loguru import logger
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.schemas.api_key_schema import ApiKeyCreate, ApiKeyOut
 from app.services.api_key_service import ApiKeyService
-from app.utils.auth import (
-    generate_api_key,
-    get_api_key_service,
-    hash_api_key,
-    require_admin,
-)
+from app.utils.auth import generate_api_key, hash_api_key, require_admin
+from app.utils.database import get_session
 
 api_key_routes = APIRouter(prefix="/v1/keys")
+
+
+def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyService:
+    return ApiKeyService(session=session)
 
 
 @api_key_routes.post(
@@ -67,8 +68,8 @@ async def api_key_revoke(
     return {"message": "API key revoked successfully"}
 
 
-@api_key_routes.post(
-    "/{device_id}/refresh",
+@api_key_routes.put(
+    "/refresh/{device_id}",
     dependencies=[Depends(require_admin)],
     response_model=ApiKeyOut,
     status_code=status.HTTP_200_OK,
@@ -89,6 +90,6 @@ async def api_key_refresh(
     # Create a new key for the same device
     raw_key = generate_api_key()
     key_hash = hash_api_key(raw_key)
-    api_key = await service.refresh(key_hash=key_hash, device_id=device_id)
+    key_id = await service.refresh(key_hash=key_hash, device_id=device_id)
 
-    return ApiKeyOut(id=api_key.id, api_key=raw_key)
+    return ApiKeyOut(id=key_id, api_key=raw_key)

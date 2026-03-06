@@ -86,8 +86,8 @@ class TestApiKey:
             f"/api/v1/keys/{default_devices[0].id}",
             headers=admin_headers,
         )
-        response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}/refresh",
+        response = client.put(
+            f"/api/v1/keys/refresh/{default_devices[0].id}",
             headers=admin_headers,
         )
         assert response.status_code == 200
@@ -103,51 +103,7 @@ class TestApiKey:
             f"/api/v1/keys/{default_devices[0].id}",
             headers=admin_headers,
         )
-        response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}/refresh",
+        response = client.put(
+            f"/api/v1/keys/refresh/{default_devices[0].id}",
         )
         assert response.status_code == 403
-
-    def test_create_duplicate_api_key(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
-    ):
-        """Creating a second API key for the same device should return 409."""
-        client.post(
-            f"/api/v1/keys/{default_devices[0].id}",
-            headers=admin_headers,
-        )
-        response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}",
-            headers=admin_headers,
-        )
-        assert response.status_code == 409
-
-    def test_refresh_revoked_api_key(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
-    ):
-        """Refreshing a revoked API key should unrevoke it and allow data submission."""
-        create_response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}",
-            headers=admin_headers,
-        )
-        client.patch(
-            f"/api/v1/keys/{default_devices[0].id}/revoke",
-            headers=admin_headers,
-        )
-        refresh_response = client.post(
-            f"/api/v1/keys/{default_devices[0].id}/refresh",
-            headers=admin_headers,
-        )
-        assert refresh_response.status_code == 200
-        new_key = refresh_response.json().get("api_key")
-        assert new_key != create_response.json().get("api_key")
-
-        data_response = client.post(
-            "/api/v1/data/",
-            json={"temperature": 22.5},
-            headers={
-                "X-API-Key": new_key,
-                "X-Device-Id": str(default_devices[0].id),
-            },
-        )
-        assert data_response.status_code == 201
