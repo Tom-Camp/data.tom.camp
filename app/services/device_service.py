@@ -105,7 +105,7 @@ class DeviceService:
         await self._db.commit()
         logger.info("Deleted device {} with id: {}", db_device.name, db_device.id)
 
-    async def list(self, skip: int = 0, limit: int = 50) -> Sequence[Device | None]:
+    async def list(self, skip: int = 0, limit: int = 50) -> Sequence[Device]:
         """
         List devices with pagination.
 

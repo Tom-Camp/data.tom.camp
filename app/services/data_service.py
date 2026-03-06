@@ -1,5 +1,5 @@
-from datetime import datetime
-from typing import Any, Sequence
+from datetime import datetime, timezone
+from typing import Any, Literal, Sequence
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -25,7 +25,7 @@ class DataService:
         device_data = DeviceData(data=data_in, device_id=api_key.device_id)
         self._db.add(device_data)
 
-        api_key.last_used_at = datetime.now()
+        api_key.last_used_at = datetime.now(timezone.utc)
         self._db.add(api_key)
 
         await self._db.commit()
@@ -33,7 +33,7 @@ class DataService:
 
         return {"status": "ok", "id": str(device_data.id)}
 
-    async def read(self, data_id: str) -> DeviceData | None:
+    async def read(self, data_id: UUID) -> DeviceData | None:
         """
         Get a device data entry by its ID.
         :param data_id: The ID of the device data entry to retrieve.
@@ -42,8 +42,12 @@ class DataService:
         return await self._db.get(DeviceData, data_id)
 
     async def list(
-        self, device_id: UUID, skip: int = 0, limit: int = 50, order: str = "desc"
-    ) -> Sequence[DeviceData | None]:
+        self,
+        device_id: UUID,
+        skip: int = 0,
+        limit: int = 50,
+        order: Literal["asc", "desc"] = "desc",
+    ) -> Sequence[DeviceData]:
         """
         Get a list of all data entries for a given device.
         :param device_id: The ID of the device to retrieve data for.
@@ -64,9 +68,9 @@ class DataService:
             .limit(limit)
             .where(DeviceData.device_id == device_id)
             .order_by(
-                DeviceData.created_date.desc()  # type: ignore[union-attr]
+                DeviceData.created_date.desc()  # type: ignore[attr-defined]
                 if order == "desc"
-                else DeviceData.created_date.asc()  # type: ignore[union-attr]
+                else DeviceData.created_date.asc()  # type: ignore[attr-defined]
             )
         )
         result = await self._db.execute(statement)

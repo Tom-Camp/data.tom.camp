@@ -45,17 +45,16 @@ class ApiKeyService:
         api_key = await self.__get_key_by_device_id(device_id=device_id)
         return api_key
 
-    async def revoke(self, api_key: ApiKey) -> dict[str, str]:
+    async def revoke(self, device_id: UUID) -> None:
         """
-        Revoke an API key by its ID.
-        :param api_key: ApiKeyCreate object; schemas.api_key_schema.ApiKeyCreate
-        :return: A dictionary with a message confirming the revocation.
+        Revoke an API key by device ID.
+        :param device_id: The ID of the device whose API key should be revoked.
         """
+        api_key = await self.__get_key_by_device_id(device_id=device_id)
         api_key.revoked = True
         self._db.add(api_key)
         await self._db.commit()
         logger.info("Revoked API key with id: {}", api_key.id)
-        return {"message": f"API key with id {api_key.id} has been revoked."}
 
     async def refresh(self, key_hash: str, device_id: UUID) -> UUID:
         """
