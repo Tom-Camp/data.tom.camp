@@ -84,8 +84,6 @@ class DeviceService:
         :param limit: Maximum number of records to return for pagination.
         :return: Sequence of Device objects.
         """
-        statement = (
-            select(Device).order_by(Device.created_date).offset(skip).limit(limit)
-        )  # type: ignore[arg-type]
+        statement = select(Device).offset(skip).limit(limit)
         result = await self._db.execute(statement)
         return result.scalars().all()

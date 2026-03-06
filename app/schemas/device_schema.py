@@ -1,8 +1,8 @@
+import uuid
 from datetime import datetime
 from typing import Any
-from uuid import UUID
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 
 
 class DeviceCreate(BaseModel):
@@ -16,16 +16,9 @@ class DeviceUpdate(BaseModel):
     description: str | None = Field(None, max_length=1024)
     notes: dict[str, Any] | None = None
 
-    @model_validator(mode="after")
-    def require_at_least_one_field(self) -> "DeviceUpdate":
-        if all(v is None for v in (self.name, self.description, self.notes)):
-            raise ValueError("At least one field must be provided")
-        return self
-
 
 class DeviceRead(BaseModel):
-    id: UUID
-    created_date: datetime
+    id: uuid.UUID
     updated_date: datetime
     name: str
     description: str | None = None

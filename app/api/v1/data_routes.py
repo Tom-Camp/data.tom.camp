@@ -1,7 +1,7 @@
-from typing import Any, Literal
+from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,16 +13,14 @@ from app.utils.database import get_session
 
 data_routes = APIRouter(prefix="/v1/data")
 
-_DATA_EXCLUDE = {"device"}
+_DATA_EXCLUDE = {"updated_date", "device"}
 
 
 def get_data_service(session: AsyncSession = Depends(get_session)) -> DataService:
     return DataService(session=session)
 
 
-@data_routes.post(
-    "/", response_model=dict[str, str], status_code=status.HTTP_201_CREATED
-)
+@data_routes.post("/", status_code=status.HTTP_201_CREATED)
 async def data_create(
     data_in: dict[str, Any],
     api_key: ApiKey = Depends(verify_api_key),
@@ -45,9 +43,8 @@ async def data_create(
 )
 async def data_list(
     device_id: UUID,
-    skip: int = Query(default=0, ge=0),
-    limit: int = Query(default=50, ge=1, le=200),
-    order: Literal["asc", "desc"] = Query(default="desc"),
+    skip: int = 0,
+    limit: int = 50,
     service: DataService = Depends(get_data_service),
 ) -> list[DeviceDataRead]:
     """
@@ -55,20 +52,16 @@ async def data_list(
     :param device_id: The ID of the device to list data for.
     :param skip: The number of entries to skip (for pagination).
     :param limit: The maximum number of entries to return (for pagination).
-    :param order: Sort order for results by created_date; "asc" or "desc" (default).
     :param service: DataService; services.data_service.DataService
     :return: A list of DeviceDataRead objects representing the device data entries.
     """
     logger.info(
-        "Listing device data for device id: {}, skip: {}, limit: {}, order: {}",
+        "Listing device data for device id: {}, skip: {}, limit: {}",
         device_id,
         skip,
         limit,
-        order,
     )
-    db_data_list = await service.list(
-        device_id=device_id, skip=skip, limit=limit, order=order
-    )
+    db_data_list = await service.list(device_id=device_id, skip=skip, limit=limit)
 
     return [
         DeviceDataRead(**db_data.model_dump(exclude=_DATA_EXCLUDE))

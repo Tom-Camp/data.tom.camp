@@ -37,6 +37,3 @@ log_cli = false
 log_cli_level = "WARNING"
 log_level = "WARNING"
 addopts = "-q"
-
-[tool.bandit]
-exclude_dirs = ["tests"]
