@@ -25,8 +25,11 @@ setup_logging(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting up — creating database tables")
-    await create_db_and_tables()
+    if settings.ENVIRONMENT != "production":
+        logger.info("Starting up — creating database tables")
+        await create_db_and_tables()
+    else:
+        logger.info("Starting up — skipping create_all, schema managed by Alembic")
     logger.info("Startup complete")
     yield
     logger.info("Shutting down")
@@ -64,9 +67,7 @@ async def root():
 async def custom_422_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": "Invalid request data",
-        },
+        content={"detail": exc.errors()},
     )
 
 

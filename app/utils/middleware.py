@@ -1,6 +1,6 @@
 import time
-import uuid
 from collections.abc import Awaitable, Callable
+from uuid import uuid4
 
 from fastapi import Request, Response
 from loguru import logger
@@ -20,7 +20,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         request: Request,
         call_next: Callable[[Request], Awaitable[Response]],
     ) -> Response:
-        request_id = str(uuid.uuid4())
+        request_id = str(uuid4())
         start = time.perf_counter()
 
         with log_context(
