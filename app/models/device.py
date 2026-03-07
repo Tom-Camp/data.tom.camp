@@ -21,7 +21,9 @@ class Device(ModelBase, table=True):  # type: ignore
         default_factory=dict,
         sa_column=sa.Column(JSONType, nullable=False),
     )
-    api_key: "ApiKey | None" = Relationship(back_populates="device")
+    api_key: "ApiKey" = Relationship(
+        back_populates="device"
+    )  # nullable; SQLAlchemy resolves string annotations as class names so union syntax cannot be used here
     data: list["DeviceData"] = Relationship(back_populates="device")
 
 

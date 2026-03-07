@@ -35,13 +35,10 @@ class TestDevice:
         )
         assert response.status_code == 403
 
-    def test_read_device_by_id(
-        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
-    ):
+    def test_read_device_by_id(self, client: TestClient, default_devices: list[Device]):
         """Getting a device by ID should return 200 and the device data."""
         response = client.get(
             f"/api/v1/devices/{default_devices[0].id}",
-            headers=admin_headers,
         )
         assert response.status_code == 200
         data = response.json()
@@ -128,3 +125,21 @@ class TestDevice:
         uid = UUID("00000000-0000-0000-0000-000000000000")
         response = client.get(f"/api/v1/devices/{uid}")
         assert response.status_code == 404
+
+    def test_create_duplicate_device(self, client: TestClient, admin_headers: dict):
+        """Creating two devices with the same name should return 409."""
+        payload = {"name": "Duplicate Device"}
+        client.post("/api/v1/devices/", headers=admin_headers, json=payload)
+        response = client.post("/api/v1/devices/", headers=admin_headers, json=payload)
+        assert response.status_code == 409
+
+    def test_update_device_empty_body(
+        self, client: TestClient, admin_headers: dict, default_devices: list[Device]
+    ):
+        """Updating a device with an empty body should return 422."""
+        response = client.put(
+            f"/api/v1/devices/{default_devices[0].id}",
+            headers=admin_headers,
+            json={},
+        )
+        assert response.status_code == 422
