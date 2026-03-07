@@ -21,7 +21,7 @@ class Device(ModelBase, table=True):  # type: ignore
         default_factory=dict,
         sa_column=sa.Column(JSONType, nullable=False),
     )
-    api_key: "ApiKey" = Relationship(back_populates="device")
+    api_key: "ApiKey | None" = Relationship(back_populates="device")
     data: list["DeviceData"] = Relationship(back_populates="device")
 
 
@@ -30,5 +30,11 @@ class DeviceData(ModelBase, table=True):  # type: ignore
         default_factory=dict,
         sa_column=sa.Column(JSONType, nullable=False),
     )
-    device_id: uuid.UUID = Field(foreign_key="device.id", nullable=False)
+    device_id: uuid.UUID = Field(
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("device.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     device: "Device" = Relationship(back_populates="data")

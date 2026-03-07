@@ -16,10 +16,18 @@ class ApiKey(ModelBase, table=True):  # type: ignore
         sa_column=sa.Column(sa.String(128), nullable=False, unique=True)
     )
     revoked: bool = Field(
-        default=False, sa_column_kwargs={"server_default": sa.false()}
+        default=False,
+        sa_column=sa.Column(sa.Boolean, nullable=False, server_default=sa.false()),
     )
     last_used_at: datetime | None = Field(
         default=None, sa_column=sa.Column(sa.DateTime(timezone=True), nullable=True)
     )
-    device_id: uuid.UUID = Field(foreign_key="device.id", unique=True)
+    device_id: uuid.UUID = Field(
+        sa_column=sa.Column(
+            sa.Uuid,
+            sa.ForeignKey("device.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        )
+    )
     device: "Device" = Relationship(back_populates="api_key")
