@@ -1,6 +1,6 @@
-import uuid
+from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -41,9 +41,31 @@ async def device_create(
     return DeviceRead(**new_device.model_dump(exclude=_DEVICE_EXCLUDE))
 
 
+@device_routes.get("/", response_model=list[DeviceRead], status_code=status.HTTP_200_OK)
+async def devices_list(
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=10, ge=1, le=200),
+    service: DeviceService = Depends(get_device_service),
+) -> list[DeviceRead]:
+    """
+    Route to list all devices.
+
+    :param service: DeviceService; services.device_service.DeviceService
+    :param limit: The maximum number of devices to return; default is 10.
+    :param skip: The number of devices to skip before starting to collect the result set; default is 0.
+    :return: List of Device; device_models.Device
+    """
+    logger.info("Listing devices with limit: {} and skip: {}", limit, skip)
+    db_devices = await service.list(skip=skip, limit=limit)
+    return [
+        DeviceRead(**device.model_dump(exclude=_DEVICE_EXCLUDE))
+        for device in db_devices
+    ]
+
+
 @device_routes.get("/{device_id}", response_model=DeviceRead)
 async def device_read(
-    device_id: uuid.UUID,
+    device_id: UUID,
     service: DeviceService = Depends(get_device_service),
 ) -> DeviceRead:
     """
@@ -65,7 +87,7 @@ async def device_read(
     status_code=status.HTTP_200_OK,
 )
 async def device_update(
-    device_id: uuid.UUID,
+    device_id: UUID,
     device_in: DeviceUpdate,
     service: DeviceService = Depends(get_device_service),
 ) -> DeviceRead:
@@ -88,7 +110,7 @@ async def device_update(
     status_code=status.HTTP_204_NO_CONTENT,
 )
 async def device_delete(
-    device_id: uuid.UUID,
+    device_id: UUID,
     service: DeviceService = Depends(get_device_service),
 ) -> None:
     """
@@ -100,26 +122,3 @@ async def device_delete(
     logger.info("Deleting device with id: {}", device_id)
     await service.delete(device_id=device_id)
     return None
-
-
-@device_routes.get("/", response_model=list[DeviceRead], status_code=status.HTTP_200_OK)
-async def devices_list(
-    limit: int = 10,
-    offset: int = 0,
-    service: DeviceService = Depends(get_device_service),
-) -> list[DeviceRead]:
-    """
-    Route to list all devices.
-
-    :param service: DeviceService; services.device_service.DeviceService
-    :param limit: The maximum number of devices to return; default is 10.
-    :param offset: The number of devices to skip before starting to collect the result set; default is 0.
-    :return: List of Device; device_models.Device
-    """
-
-    logger.info("Listing devices with limit: {} and offset: {}", limit, offset)
-    db_devices = await service.list(skip=offset, limit=limit)
-    return [
-        DeviceRead(**device.model_dump(exclude=_DEVICE_EXCLUDE))
-        for device in db_devices
-    ]

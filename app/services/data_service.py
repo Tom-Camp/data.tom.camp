@@ -69,9 +69,9 @@ class DataService:
             .limit(limit)
             .where(DeviceData.device_id == device_id)
             .order_by(
-                DeviceData.created_date.desc()  # type: ignore[attr-defined]
+                DeviceData.created_date.desc()  # type: ignore[union-attr]
                 if order == "desc"
-                else DeviceData.created_date.asc()  # type: ignore[attr-defined]
+                else DeviceData.created_date.asc()  # type: ignore[union-attr]
             )
         )
         result = await self._db.execute(statement)

@@ -1,7 +1,7 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -20,7 +20,9 @@ def get_data_service(session: AsyncSession = Depends(get_session)) -> DataServic
     return DataService(session=session)
 
 
-@data_routes.post("/", status_code=status.HTTP_201_CREATED)
+@data_routes.post(
+    "/", response_model=dict[str, str], status_code=status.HTTP_201_CREATED
+)
 async def data_create(
     data_in: dict[str, Any],
     api_key: ApiKey = Depends(verify_api_key),
@@ -43,8 +45,8 @@ async def data_create(
 )
 async def data_list(
     device_id: UUID,
-    skip: int = 0,
-    limit: int = 50,
+    skip: int = Query(default=0, ge=0),
+    limit: int = Query(default=50, ge=1, le=200),
     service: DataService = Depends(get_data_service),
 ) -> list[DeviceDataRead]:
     """
