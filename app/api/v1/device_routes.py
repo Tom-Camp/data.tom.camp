@@ -11,7 +11,7 @@ from app.utils.database import get_session
 
 device_routes = APIRouter(prefix="/v1/devices")
 
-_DEVICE_EXCLUDE = {"api_key", "created_date", "data"}
+_DEVICE_EXCLUDE = {"api_key", "data"}
 
 
 def get_device_service(session: AsyncSession = Depends(get_session)) -> DeviceService:

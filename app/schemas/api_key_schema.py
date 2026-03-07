@@ -1,13 +1,13 @@
-import uuid
+from uuid import UUID
 
 from pydantic import BaseModel
 
 
 class ApiKeyCreate(BaseModel):
-    device_id: uuid.UUID
+    device_id: UUID
     key_hash: str
 
 
 class ApiKeyOut(BaseModel):
-    id: uuid.UUID
+    id: UUID
     api_key: str

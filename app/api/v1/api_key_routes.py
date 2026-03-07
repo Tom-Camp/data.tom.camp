@@ -89,6 +89,6 @@ async def api_key_refresh(
     # Create a new key for the same device
     raw_key = generate_api_key()
     key_hash = hash_api_key(raw_key)
-    key_id = await service.refresh(key_hash=key_hash, device_id=device_id)
+    api_key = await service.refresh(key_hash=key_hash, device_id=device_id)
 
-    return ApiKeyOut(id=key_id, api_key=raw_key)
+    return ApiKeyOut(id=api_key.id, api_key=raw_key)
