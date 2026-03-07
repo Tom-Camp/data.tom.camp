@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 class ApiKey(ModelBase, table=True):  # type: ignore
     key_hash: str = Field(
-        sa_column=sa.Column(sa.String(64), nullable=False, unique=True)
+        sa_column=sa.Column(sa.String(128), nullable=False, unique=True)
     )
     revoked: bool = Field(
         default=False, sa_column_kwargs={"server_default": sa.false()}

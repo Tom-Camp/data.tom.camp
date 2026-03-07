@@ -17,14 +17,16 @@ class ModelBase(SQLModel):
         primary_key=True,
     )
 
-    created_date: datetime = Field(
-        sa_type=sa.DateTime(timezone=True),
+    created_date: datetime | None = Field(
+        default=None,
+        sa_type=sa.DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
 
-    updated_date: datetime = Field(
-        sa_type=sa.DateTime(timezone=True),
+    updated_date: datetime | None = Field(
+        default=None,
+        sa_type=sa.DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
         nullable=False,
     )
