@@ -1,12 +1,13 @@
-import uuid
 from datetime import datetime
 from typing import Any
+from uuid import UUID
 
-from sqlmodel import SQLModel
+from pydantic import BaseModel
 
 
-class DeviceDataRead(SQLModel):
-    id: uuid.UUID
+class DeviceDataRead(BaseModel):
+    id: UUID
     created_date: datetime
+    updated_date: datetime
     data: dict[str, Any]
-    device_id: uuid.UUID
+    device_id: UUID

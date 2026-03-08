@@ -2,19 +2,17 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, status
 from loguru import logger
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.api_key import ApiKey
 from app.schemas.api_key_schema import ApiKeyCreate, ApiKeyOut
 from app.services.api_key_service import ApiKeyService
-from app.utils.auth import generate_api_key, hash_api_key, require_admin, verify_api_key
-from app.utils.database import get_session
+from app.utils.auth import (
+    generate_api_key,
+    get_api_key_service,
+    hash_api_key,
+    require_admin,
+)
 
 api_key_routes = APIRouter(prefix="/v1/keys")
-
-
-def get_api_key_service(session: AsyncSession = Depends(get_session)) -> ApiKeyService:
-    return ApiKeyService(session=session)
 
 
 @api_key_routes.post(
@@ -48,29 +46,31 @@ async def api_key_create(
     return ApiKeyOut(id=api_key.id, api_key=raw_key)
 
 
-@api_key_routes.put(
-    "/",
+@api_key_routes.patch(
+    "/{device_id}/revoke",
     dependencies=[Depends(require_admin)],
+    response_model=dict[str, str],
     status_code=status.HTTP_200_OK,
 )
 async def api_key_revoke(
-    api_key: ApiKey = Depends(verify_api_key),
+    device_id: UUID,
     service: ApiKeyService = Depends(get_api_key_service),
 ) -> dict[str, str]:
     """
-    Route to revoke an API key by its ID.
-    :param api_key: The API key to revoke, obtained from the verify_api_key dependency.
+    Route to revoke an API key by device ID.
+    :param device_id: The ID of the device whose API key should be revoked.
     :param service: ApiKeyService; services.api_key_service.ApiKeyService
     :return: A message indicating the result of the revocation.
     """
-    logger.info("Revoking API key for device with ID: {}", api_key.device_id)
-    await service.revoke(api_key=api_key)
+    logger.info("Revoking API key for device with ID: {}", device_id)
+    await service.revoke(device_id=device_id)
     return {"message": "API key revoked successfully"}
 
 
-@api_key_routes.put(
-    "/refresh/{device_id}",
+@api_key_routes.post(
+    "/{device_id}/refresh",
     dependencies=[Depends(require_admin)],
+    response_model=ApiKeyOut,
     status_code=status.HTTP_200_OK,
 )
 async def api_key_refresh(
@@ -89,6 +89,6 @@ async def api_key_refresh(
     # Create a new key for the same device
     raw_key = generate_api_key()
     key_hash = hash_api_key(raw_key)
-    key_id = await service.refresh(key_hash=key_hash, device_id=device_id)
+    api_key = await service.refresh(key_hash=key_hash, device_id=device_id)
 
-    return ApiKeyOut(id=key_id, api_key=raw_key)
+    return ApiKeyOut(id=api_key.id, api_key=raw_key)

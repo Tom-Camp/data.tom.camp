@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -10,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from app.api.v1.api_key_routes import api_key_routes
 from app.api.v1.data_routes import data_routes
 from app.api.v1.device_routes import device_routes
+from app.exceptions import ConflictError, NotFoundError
 from app.utils.config import settings
 from app.utils.database import create_db_and_tables, dispose_engine
 from app.utils.logger import setup_logging
@@ -24,8 +26,11 @@ setup_logging(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting up — creating database tables")
-    await create_db_and_tables()
+    if settings.ENVIRONMENT != "production":
+        logger.info("Starting up — creating database tables")
+        await create_db_and_tables()
+    else:
+        logger.info("Starting up — skipping create_all, schema managed by Alembic")
     logger.info("Startup complete")
     yield
     logger.info("Shutting down")
@@ -49,18 +54,6 @@ app.add_middleware(
 app.add_middleware(RequestLoggingMiddleware)
 
 
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger.bind(path=request.url.path, method=request.method).info("request_start")
-    response = await call_next(request)
-    logger.bind(
-        path=request.url.path,
-        method=request.method,
-        status_code=response.status_code,
-    ).info("request_end")
-    return response
-
-
 app.include_router(api_key_routes, prefix="/api")
 app.include_router(data_routes, prefix="/api")
 app.include_router(device_routes, prefix="/api")
@@ -71,13 +64,16 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
+
 @app.exception_handler(RequestValidationError)
 async def custom_422_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": "Invalid request data",
-        },
+        content={"detail": jsonable_encoder(exc.errors())},
     )
 
 
@@ -87,4 +83,20 @@ async def integrity_error_handler(request: Request, exc: IntegrityError):
     return JSONResponse(
         status_code=status.HTTP_409_CONFLICT,
         content={"detail": "Integrity error: constraint violated"},
+    )
+
+
+@app.exception_handler(NotFoundError)
+async def not_found_handler(request: Request, exc: NotFoundError):
+    return JSONResponse(
+        status_code=status.HTTP_404_NOT_FOUND,
+        content={"detail": exc.detail},
+    )
+
+
+@app.exception_handler(ConflictError)
+async def conflict_handler(request: Request, exc: ConflictError):
+    return JSONResponse(
+        status_code=status.HTTP_409_CONFLICT,
+        content={"detail": exc.detail},
     )

@@ -14,7 +14,7 @@ DATABASE_URL = settings.async_database_url
 
 engine: AsyncEngine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=settings.ENVIRONMENT == "development",
     pool_pre_ping=True,
     pool_recycle=3600,
 )
@@ -26,11 +26,8 @@ AsyncSessionFactory = async_sessionmaker(
 )
 
 
-AsyncSessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
-
-
 async def create_db_and_tables() -> None:
-    async with engine.begin() as conn:  # type: ignore[attr-defined]
+    async with engine.begin() as conn:
         await conn.run_sync(SQLModel.metadata.create_all)
 
 

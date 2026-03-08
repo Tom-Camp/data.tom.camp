@@ -3,28 +3,28 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    ADMIN_SECRET_KEY: str = Field(description="Admin secret key")
+    ADMIN_SECRET_KEY: SecretStr = Field(description="Admin secret key")
     APP_NAME: str = Field(default="Tom.Camp.Api")
-    CORS_ORIGINS: list[str] | None = None
+    CORS_ORIGINS: list[str] = Field(default_factory=list)
     ENVIRONMENT: str | None = None
-    HASH_ALGORITHM: str = Field(description="Hash algorithm")
-    HASH_SALT: str = Field(description="Hash salt")
+    HASH_ALGORITHM: str = Field(default="blake2b", description="Hash algorithm")
+    HASH_SALT: SecretStr = Field(description="Hash salt")
     LOG_LEVEL: str = Field(default="INFO")
-    LOG_NAME: str = Field(default="tcdata")
+    LOG_NAME: str | None = Field(default=None)
     LOG_JSON_FORMAT: bool = False
-    POSTGRES_DB: str | None = None
-    POSTGRES_HOST: str | None = None
+    POSTGRES_DB: str = Field(description="PostgreSQL database name")
+    POSTGRES_HOST: str = Field(description="PostgreSQL host")
     POSTGRES_PASS: SecretStr = Field(
-        default="postgres",
         validation_alias=AliasChoices("POSTGRES_PASS", "postgres_password"),
+        description="PostgreSQL password",
     )
-    POSTGRES_PORT: str | None = None
-    POSTGRES_USER: str | None = None
-    SECRET_KEY: str = Field(description="Application secret key")
+    POSTGRES_PORT: int = Field(description="PostgreSQL port")
+    POSTGRES_USER: str = Field(description="PostgreSQL user")
 
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
+        extra="ignore",
     )
 
     @property
