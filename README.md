@@ -48,6 +48,7 @@ Using Docker Compose:
 `docker-compose.yml` is configured to use the environment variables from the `.env` file and will spin
  up both the application and a PostgreSQL database. Make sure to update the `.env` file with the
  correct values.
+
 ```bash
 docker-compose up -d
 ```
