@@ -14,7 +14,7 @@ DATABASE_URL = settings.async_database_url
 
 engine: AsyncEngine = create_async_engine(
     DATABASE_URL,
-    echo=settings.ENVIRONMENT != "production",
+    echo=settings.ENVIRONMENT == "development",
     pool_pre_ping=True,
     pool_recycle=3600,
 )

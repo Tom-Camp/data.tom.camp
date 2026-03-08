@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from pydantic import ConfigDict
@@ -18,13 +18,15 @@ class ModelBase(SQLModel):
     )
 
     created_date: datetime = Field(
-        sa_type=sa.DateTime(timezone=True),
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={"server_default": func.now()},
         nullable=False,
     )
 
     updated_date: datetime = Field(
-        sa_type=sa.DateTime(timezone=True),
+        default_factory=lambda: datetime.now(timezone.utc),
+        sa_type=sa.DateTime(timezone=True),  # type: ignore[arg-type]
         sa_column_kwargs={"server_default": func.now(), "onupdate": func.now()},
         nullable=False,
     )

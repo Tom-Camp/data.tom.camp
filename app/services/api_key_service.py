@@ -69,7 +69,7 @@ class ApiKeyService:
         await self._db.commit()
         logger.info("Revoked API key with id: {}", api_key.id)
 
-    async def refresh(self, key_hash: str, device_id: UUID) -> UUID:
+    async def refresh(self, key_hash: str, device_id: UUID) -> ApiKey:
         """
         Replace the API key hash for a device with a new one.
         :param key_hash: The new API key hash.
@@ -78,9 +78,10 @@ class ApiKeyService:
         """
         api_key = await self.get_api_key(device_id=device_id)
         api_key.key_hash = key_hash
+        api_key.revoked = False
         self._db.add(api_key)
         await self._db.commit()
         await self._db.refresh(api_key)
 
         logger.info("Refreshed API key for device id: {}", api_key.device_id)
-        return api_key.id
+        return api_key
