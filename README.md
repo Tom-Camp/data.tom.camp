@@ -22,7 +22,7 @@ Navigate to the project directory and install dependencies with [Astral uv](http
 
 ```bash
 cd data.tom.camp
-uv sync install
+uv sync
 ```
 
 Copy the `.env.example` file to `.env`; and update the environment variables:
