@@ -4,6 +4,8 @@ services:
     env_file:
       - ./prod.env
     volumes: []
+    ports:
+      - "5050:5000"
     command:
       - uv
       - run
