@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     ADMIN_SECRET_KEY: SecretStr = Field(description="Admin secret key")
     APP_NAME: str = Field(default="Tom.Camp.Api")
-    CORS_ORIGINS: list[str] = []
+    CORS_ORIGINS: list[str] = Field(default_factory=list)
     ENVIRONMENT: str | None = None
     HASH_ALGORITHM: str = Field(default="blake2b", description="Hash algorithm")
     HASH_SALT: SecretStr = Field(description="Hash salt")
