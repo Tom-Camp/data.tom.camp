@@ -15,3 +15,10 @@ services:
       - "5000"
       - --workers
       - "2"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    external: true
+    name: shared-db-network
