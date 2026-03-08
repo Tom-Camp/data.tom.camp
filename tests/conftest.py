@@ -61,7 +61,7 @@ async def client(create_test_tables):
 @pytest.fixture(scope="function")
 def admin_headers():
     """Headers with a valid admin secret for authenticated endpoints."""
-    return {"X-Admin-Secret": settings.ADMIN_SECRET_KEY}
+    return {"X-Admin-Secret": settings.ADMIN_SECRET_KEY.get_secret_value()}
 
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")

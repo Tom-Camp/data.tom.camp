@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
@@ -25,8 +26,11 @@ setup_logging(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting up — creating database tables")
-    await create_db_and_tables()
+    if settings.ENVIRONMENT != "production":
+        logger.info("Starting up — creating database tables")
+        await create_db_and_tables()
+    else:
+        logger.info("Starting up — skipping create_all, schema managed by Alembic")
     logger.info("Startup complete")
     yield
     logger.info("Shutting down")
@@ -60,13 +64,16 @@ async def root():
     return RedirectResponse(url="/docs")
 
 
+@app.get("/health", include_in_schema=False)
+async def health():
+    return {"status": "ok"}
+
+
 @app.exception_handler(RequestValidationError)
 async def custom_422_handler(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=422,
-        content={
-            "detail": "Invalid request data",
-        },
+        content={"detail": jsonable_encoder(exc.errors())},
     )
 
 

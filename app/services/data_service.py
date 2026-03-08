@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal, Sequence
 from uuid import UUID
 
+from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
@@ -31,6 +32,11 @@ class DataService:
         await self._db.commit()
         await self._db.refresh(device_data)
 
+        logger.info(
+            "Created device data {} for device id: {}",
+            device_data.id,
+            api_key.device_id,
+        )
         return {"status": "ok", "id": str(device_data.id)}
 
     async def read(self, data_id: UUID) -> DeviceData:
@@ -69,9 +75,9 @@ class DataService:
             .limit(limit)
             .where(DeviceData.device_id == device_id)
             .order_by(
-                DeviceData.created_date.desc()  # type: ignore[attr-defined]
+                DeviceData.created_date.desc()  # type: ignore[union-attr]
                 if order == "desc"
-                else DeviceData.created_date.asc()  # type: ignore[attr-defined]
+                else DeviceData.created_date.asc()  # type: ignore[union-attr]
             )
         )
         result = await self._db.execute(statement)
