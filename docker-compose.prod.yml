@@ -9,6 +9,7 @@ services:
     command:
       - uv
       - run
+      - --no-dev
       - uvicorn
       - app.main:app
       - --host
