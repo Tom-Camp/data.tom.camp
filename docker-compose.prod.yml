@@ -17,6 +17,8 @@ services:
       - "5050"
       - --workers
       - "2"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - app-network
 
