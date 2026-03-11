@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.api_key import ApiKey
 from app.schemas.data_schema import DeviceDataRead
 from app.services.data_service import DataService
-from app.utils.auth import verify_api_key
+from app.utils.auth import require_admin, verify_api_key
 from app.utils.database import get_session
 
 data_routes = APIRouter(prefix="/v1/data")
@@ -90,3 +90,22 @@ async def data_read(
     logger.info("Getting device data with id: {}", data_id)
     db_data = await service.read(data_id=data_id)
     return DeviceDataRead(**db_data.model_dump(exclude=_DATA_EXCLUDE))
+
+
+@data_routes.delete(
+    "/{data_id}",
+    dependencies=[Depends(require_admin)],
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+async def data_delete(
+    data_id: UUID,
+    service: DataService = Depends(get_data_service),
+) -> None:
+    """
+    Route to delete a device data entry by its ID.
+    :param data_id: The ID of the device data entry to delete.
+    :param api_key: The API key for authentication, obtained from the verify_api_key dependency.
+    :param service: DataService; services.data_service.DataService
+    """
+    logger.info("Deleting device data with id: {}", data_id)
+    await service.delete(data_id=data_id)

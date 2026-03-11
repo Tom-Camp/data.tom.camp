@@ -75,10 +75,23 @@ class DataService:
             .limit(limit)
             .where(DeviceData.device_id == device_id)
             .order_by(
-                DeviceData.created_date.desc()  # type: ignore[union-attr]
+                DeviceData.created_date.desc()  # type: ignore[attr-defined]
                 if order == "desc"
-                else DeviceData.created_date.asc()  # type: ignore[union-attr]
+                else DeviceData.created_date.asc()  # type: ignore[attr-defined]
             )
         )
         result = await self._db.execute(statement)
         return result.scalars().all()
+
+    async def delete(self, data_id: UUID) -> None:
+        """
+        Delete a device data entry by its ID.
+        :param data_id: The ID of the device data entry to delete.
+        """
+        db_data = await self._db.get(DeviceData, data_id)
+        if db_data is None:
+            raise NotFoundError(f"Device data {data_id} not found")
+
+        await self._db.delete(db_data)
+        await self._db.commit()
+        logger.info("Deleted device data with id: {}", data_id)
